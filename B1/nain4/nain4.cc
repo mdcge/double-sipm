@@ -30,7 +30,6 @@ G4PVPlacement* place::now() {
   }
   // TODO: Think about these later
   bool WTF_is_pMany   = false;
-  bool check_overlaps = false;
 
   return new G4PVPlacement{transformation,
                            child.value(),

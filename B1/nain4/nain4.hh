@@ -167,6 +167,7 @@ public:
   place& copy_no(int         n)            { copy_number = n      ; return *this; }
   place& in(G4LogicalVolume* parent_)      { parent      = parent_; return *this; }
   place& name(G4String       label_)       { label       = label_ ; return *this; }
+  place& check(G4bool        check)        { check_overlaps = check; return *this; }
 
   place  clone() const                                            { return *this; }
   G4PVPlacement* operator()()                                     { return now(); }
@@ -178,6 +179,7 @@ private:
   optional<G4String>          label;
   optional<int>               copy_number;
   G4Transform3D               transformation = HepGeom::Transform3D::Identity;
+  G4bool                      check_overlaps = true;
 };
 
 // --------------------------------------------------------------------------------
