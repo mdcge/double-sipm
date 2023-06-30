@@ -1,0 +1,15 @@
+# -*-Makefile-*-
+
+# (Re)compile and run
+run: compile
+	build/double-sipm
+
+compile: configure
+	cmake --build build -j
+
+configure:
+	cmake -S . -B build
+
+# Remove all traces of the local copy of the example
+clean:
+	rm build -rf
