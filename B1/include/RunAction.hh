@@ -49,7 +49,6 @@ class RunAction : public G4UserRunAction
 {
   public:
     RunAction();
-    ~RunAction() override;
 
     void BeginOfRunAction(const G4Run*) override;
     void   EndOfRunAction(const G4Run*) override;
@@ -57,8 +56,8 @@ class RunAction : public G4UserRunAction
     void AddEdep (G4double edep);
 
   private:
-    G4Accumulable<G4double> fEdep = 0.;
-    G4Accumulable<G4double> fEdep2 = 0.;
+    G4Accumulable<G4double> fEdep  = 0;
+    G4Accumulable<G4double> fEdep2 = 0;
 };
 
 }

@@ -43,12 +43,8 @@
 namespace B1
 {
 
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-RunAction::RunAction()
-{
-  // add new units for dose
-  //
+RunAction::RunAction() {
+  // Add new units for dose
   const G4double milligray = 1.e-3*gray;
   const G4double microgray = 1.e-6*gray;
   const G4double nanogray  = 1.e-9*gray;
@@ -67,13 +63,7 @@ RunAction::RunAction()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-RunAction::~RunAction()
-{}
-
-//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-void RunAction::BeginOfRunAction(const G4Run*)
-{
+void RunAction::BeginOfRunAction(const G4Run*) {
   // inform the runManager to save random number seed
   G4RunManager::GetRunManager()->SetRandomNumberStore(false);
 
@@ -85,8 +75,7 @@ void RunAction::BeginOfRunAction(const G4Run*)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void RunAction::EndOfRunAction(const G4Run* run)
-{
+void RunAction::EndOfRunAction(const G4Run* run) {
   G4int nofEvents = run->GetNumberOfEvent();
   if (nofEvents == 0) return;
 
@@ -94,13 +83,18 @@ void RunAction::EndOfRunAction(const G4Run* run)
   G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Merge();
 
-  // Compute dose = total energy deposit in a run and its variance
-  //
+  // Compute dose = total energy deposited in a run and its variance
   G4double edep  = fEdep.GetValue();
   G4double edep2 = fEdep2.GetValue();
 
+  // Var(X) = E[X^2]               - E[X]^2
+  //        = sum(X^2) / nofEvents - (sum(X)   / nofEvents)^2
+  //        = edep2    / nofEvents - (edep     / nofEvents)^2
+  //        = edep2    / nofEvents - edep*edep / nofEvents**2
+  //        = (1/nofEvents) * ( edep2 - edep*edep/nofEvents )
+  // `rms` seems to refer to variance, and then std dev (with a missing factor of 1/nofEvents)
   G4double rms = edep2 - edep*edep/nofEvents;
-  if (rms > 0.) rms = std::sqrt(rms); else rms = 0.;
+  if (rms > 0) rms = std::sqrt(rms); else rms = 0;
 
   const DetectorConstruction* detConstruction
    = static_cast<const DetectorConstruction*>
