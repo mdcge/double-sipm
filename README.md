@@ -64,30 +64,23 @@ If you change the Geant4 configuration (if you are using `direnv`, it will notic
 
 Be sure to expunge any examples you had compiled with a differently-configured Geant4, otherwise you may get mysterious problems.
 
-# Activating the environment
+# Standard Geant4 examples
 
-If you have [direnv](https://direnv.net/) installed and configured, it will automatically activate the development environment when you enter this directory (though you will have to approve it the first time with `direnv allow`) and disable it when you leave the directory.
-
-Without `direnv` you can manually enable the environment with `nix develop`, and disable it by quitting the shell started by `nix develop`.
-
-
-# Something to try, that should work
-
-Once the environment has been activated, try typing
+This repository also allows you to run and edit the standard Geant4 examples. For example,
 
 ``` shell
-just run B1
+just G4-examples/run B1
 ```
 
 This should copy the sources of the most basic example that is distributed with Geant4, into the local directory, configure it, compile it and execute it.
 
 If all goes well, an image of a detector should appear. Try typing `/run/beamOn 10` in the `Session` box, and some simulated events should appear on the image.
 
-You should be able to modify the source code (for example increase the value of `env_sizeZ` in `B1/src/DetectorConstruction.cc` (change it from 30 to 130, to make the change obvious)) and run your modified version by repeating the earlier command `just run B1`.
+You should be able to modify the source code (for example increase the value of `env_sizeZ` in `B1/src/DetectorConstruction.cc` (change it from 30 to 130, to make the change obvious)) and run your modified version by repeating the earlier command `just G4-examples/run B1`.
 
 # Running other examples
 
-Many of the other examples can be run in the same way: `just run <example-name>`. 
+Many of the other examples can be run in the same way: `just G4-examples/run <example-name>`.
 
 + Some of them will fail because necessary libraries have not (yet) been provided in this flake. 
 
@@ -97,8 +90,8 @@ Many of the other examples can be run in the same way: `just run <example-name>`
   
   1. Create a `build` subirectory the example's top-level directory
   2. `cd` into the newly-created `build` directory
-  3. `cmake ..`
-  4. `make -j N` (where `N` specifies the number of processors you want to use during compilation)
+  3. `cmake -S . -B build`
+  4. `cmake --build build -j`
   5. Find the executable which was produced by the previous step, and execute it by preceding its name with `./` In the case of the B1 example, this would be `./exampleB1`. 
 
 Fixes to these problems may be provided eventually. Don't hold your breath.
