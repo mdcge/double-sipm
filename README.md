@@ -7,7 +7,7 @@
 2. Clone this repository: `git clone https://github.com/mdcge/double-sipm.git`.
 3. `cd` into it.
 4. Type `nix develop --extra-experimental-features 'nix-command flakes'` (this may take some time as Geant4 will be downloaded and compiled).
-5. Type `just double-sipm/` (the trailing `/` is important).
+5. Type `just`.
 
    This will compile and run the example and should take a few seconds. At this point, an image of a small simulated detector should appear. 
    
