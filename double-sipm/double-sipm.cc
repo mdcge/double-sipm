@@ -1,12 +1,14 @@
 #include "nain4.hh"
 #include "g4-mandatory.hh"
 
+#include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
 #include <G4EmStandardPhysics_option4.hh>
 #include <G4OpticalPhysics.hh>
 #include <G4RunManagerFactory.hh>
 #include <G4SystemOfUnits.hh>
 #include <G4RandomDirection.hh>
+#include <G4ThreeVector.hh>
 #include <G4Tubs.hh>
 
 #include <G4UIExecutive.hh>
@@ -18,7 +20,8 @@
 
 void generate_back_to_back_511_keV_gammas(G4Event* event, G4ThreeVector position, G4double time) {
     auto gamma = nain4::find_particle("gamma");
-    auto p = 511*keV * G4RandomDirection();
+    auto direction = G4ThreeVector(3*G4UniformRand()-1.5, 3*G4UniformRand()-1.5, 12.5).unit(); // random unit vector which hits scintillator
+    auto p = 511*keV * direction;
     auto vertex =      new G4PrimaryVertex(position, time);
     vertex -> SetPrimary(new G4PrimaryParticle(gamma,  p.x(),  p.y(),  p.z()));
     vertex -> SetPrimary(new G4PrimaryParticle(gamma, -p.x(), -p.y(), -p.z()));
