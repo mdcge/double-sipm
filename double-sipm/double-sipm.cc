@@ -26,26 +26,25 @@ void generate_back_to_back_511_keV_gammas(G4Event* event, G4ThreeVector position
 }
 
 int main(int argc, char *argv[]) {
-    std::cout << "Hello World!" << std::endl;
 
     auto geometry = [] () {
         auto copper = n4::material("G4_Cu");
         auto csi = n4::material("G4_CESIUM_IODIDE");
         auto air = n4::material("G4_AIR");
 
-        G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
-        G4double scint_x = 2*cm, scint_y = 1*cm, scint_z = 1*cm;
+        // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
+        G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
         G4double world_size = 20*cm;
-        auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-        auto scintillator_r = n4::volume<G4Box>("ScintillatorR", csi, scint_x, scint_y, scint_z);
-        auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, scint_x, scint_y, scint_z);
+        // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
+        auto scintillator_r = n4::volume<G4Box>("ScintillatorR", csi, half_scint_x, half_scint_y, half_scint_z);
+        auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
         auto world = n4::volume<G4Box>("World", air, world_size, world_size, world_size);
 
-        auto cylinder_offset = 1.5*cm;
-        auto scintillator_offset = 9*cm;
-        n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-        n4::place(scintillator_r).in(world).at({scintillator_offset, 0, 0}).now();
-        n4::place(scintillator_l).in(world).at({-scintillator_offset, 0, 0}).now();
+        // auto cylinder_offset = 1.5*cm;
+        auto scintillator_offset = 22.5*mm;
+        // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
+        n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).now();
+        n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).now();
         return n4::place(world).now();
     };
 
