@@ -4,9 +4,11 @@
 #include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
 #include <G4EmStandardPhysics_option4.hh>
+#include <G4LogicalVolume.hh>
 #include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
 #include <G4RotationMatrix.hh>
+#include <G4SubtractionSolid.hh>
 #include <G4RunManagerFactory.hh>
 #include <G4SystemOfUnits.hh>
 #include <G4RandomDirection.hh>
@@ -49,19 +51,32 @@ int main(int argc, char *argv[]) {
             .done();
         air -> SetMaterialPropertiesTable(mpt_air);
 
+        auto teflon = n4::material("G4_TEFLON");
+
         // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
         G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
-        G4double world_size = 50*mm;
+        G4double half_world_size = 50*mm;
+        G4double coating_thck = 0.5*mm;
         // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
         auto scintillator_r = n4::volume<G4Box>("ScintillatorR", csi, half_scint_x, half_scint_y, half_scint_z);
         auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
-        auto world = n4::volume<G4Box>("World", air, world_size, world_size, world_size);
+
+        G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
+        G4VSolid* coating_int = new G4Box("CoatingInt", half_scint_x, half_scint_y, half_scint_z);
+        G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
+        G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
+        auto rot180 = new G4RotationMatrix();
+        rot180 -> rotateY(180*deg);
+
+        auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
 
         // auto cylinder_offset = 1.5*cm;
         auto scintillator_offset = 22.5*mm;
         // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
         n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).check(true).now();
         n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).check(true).now();
+        n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).check(true).now();
+        n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).check(true).now();
         return n4::place(world).now();
     };
 
