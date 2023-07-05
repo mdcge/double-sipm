@@ -4,7 +4,9 @@
 #include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
 #include <G4EmStandardPhysics_option4.hh>
+#include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
+#include <G4RotationMatrix.hh>
 #include <G4RunManagerFactory.hh>
 #include <G4SystemOfUnits.hh>
 #include <G4RandomDirection.hh>
@@ -21,8 +23,8 @@
 void generate_back_to_back_511_keV_gammas(G4Event* event, G4ThreeVector position, G4double time) {
     auto gamma = nain4::find_particle("gamma");
     auto direction = G4ThreeVector(3*G4UniformRand()-1.5, 3*G4UniformRand()-1.5, 12.5).unit(); // random unit vector which hits scintillator
-    auto p = 511*keV * direction;
-    auto vertex =      new G4PrimaryVertex(position, time);
+    auto p = 0.511*MeV * direction;
+    auto vertex = new G4PrimaryVertex(position, time);
     vertex -> SetPrimary(new G4PrimaryParticle(gamma,  p.x(),  p.y(),  p.z()));
     vertex -> SetPrimary(new G4PrimaryParticle(gamma, -p.x(), -p.y(), -p.z()));
     event -> AddPrimaryVertex(vertex);
@@ -31,13 +33,25 @@ void generate_back_to_back_511_keV_gammas(G4Event* event, G4ThreeVector position
 int main(int argc, char *argv[]) {
 
     auto geometry = [] () {
-        auto copper = n4::material("G4_Cu");
+        std::vector<G4double> energy = {1.239841939*eV/0.25, 1.239841939*eV/0.9};
+
         auto csi = n4::material("G4_CESIUM_IODIDE");
+        std::vector<G4double> rindex_csi = {2.2094, 1.7611};
+        G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
+            .add("RINDEX", energy, rindex_csi)
+            .add("SCINTILLATIONYIELD", 100000./eV).done();
+        csi -> SetMaterialPropertiesTable(mpt_csi);
+
         auto air = n4::material("G4_AIR");
+        std::vector<G4double> rindex_air = {1.0, 1.0};
+        G4MaterialPropertiesTable *mpt_air = n4::material_properties()
+            .add("RINDEX", energy, rindex_air)
+            .done();
+        air -> SetMaterialPropertiesTable(mpt_air);
 
         // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
         G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
-        G4double world_size = 20*cm;
+        G4double world_size = 50*mm;
         // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
         auto scintillator_r = n4::volume<G4Box>("ScintillatorR", csi, half_scint_x, half_scint_y, half_scint_z);
         auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
@@ -46,8 +60,8 @@ int main(int argc, char *argv[]) {
         // auto cylinder_offset = 1.5*cm;
         auto scintillator_offset = 22.5*mm;
         // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-        n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).now();
-        n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).now();
+        n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).check(true).now();
+        n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).check(true).now();
         return n4::place(world).now();
     };
 
