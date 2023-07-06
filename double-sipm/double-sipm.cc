@@ -1,5 +1,6 @@
 #include "nain4.hh"
 #include "g4-mandatory.hh"
+#include "geometry.hh"
 
 #include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
@@ -33,52 +34,6 @@ void generate_back_to_back_511_keV_gammas(G4Event* event, G4ThreeVector position
 }
 
 int main(int argc, char *argv[]) {
-
-    auto geometry = [] () {
-        std::vector<G4double> energy = {1.239841939*eV/0.25, 1.239841939*eV/0.9};
-
-        auto csi = n4::material("G4_CESIUM_IODIDE");
-        std::vector<G4double> rindex_csi = {2.2094, 1.7611};
-        G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
-            .add("RINDEX", energy, rindex_csi)
-            .add("SCINTILLATIONYIELD", 100000./eV).done();
-        csi -> SetMaterialPropertiesTable(mpt_csi);
-
-        auto air = n4::material("G4_AIR");
-        std::vector<G4double> rindex_air = {1.0, 1.0};
-        G4MaterialPropertiesTable *mpt_air = n4::material_properties()
-            .add("RINDEX", energy, rindex_air)
-            .done();
-        air -> SetMaterialPropertiesTable(mpt_air);
-
-        auto teflon = n4::material("G4_TEFLON");
-
-        // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
-        G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
-        G4double half_world_size = 50*mm;
-        G4double coating_thck = 0.5*mm;
-        // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-        auto scintillator_r = n4::volume<G4Box>("ScintillatorR", csi, half_scint_x, half_scint_y, half_scint_z);
-        auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
-
-        G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
-        G4VSolid* coating_int = new G4Box("CoatingInt", half_scint_x, half_scint_y, half_scint_z);
-        G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
-        G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
-        auto rot180 = new G4RotationMatrix();
-        rot180 -> rotateY(180*deg);
-
-        auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
-
-        // auto cylinder_offset = 1.5*cm;
-        auto scintillator_offset = 22.5*mm;
-        // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-        n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).check(true).now();
-        n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).check(true).now();
-        n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).check(true).now();
-        n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).check(true).now();
-        return n4::place(world).now();
-    };
 
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
