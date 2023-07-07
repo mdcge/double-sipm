@@ -69,11 +69,10 @@ G4PVPlacement* make_geometry() {
     G4double half_world_size = 50*mm;
     G4double coating_thck = 0.5*mm;
     // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-    auto scintillator_r = n4::volume<G4Box>("ScintillatorR", fLXe, half_scint_x, half_scint_y, half_scint_z);
-    auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
+    auto scintillator = n4::volume<G4Box>("Scintillator", fLXe, half_scint_x, half_scint_y, half_scint_z);
 
     G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
-    G4VSolid* coating_int = new G4Box("CoatingInt", half_scint_x, half_scint_y, half_scint_z);
+    G4VSolid* coating_int = new G4Box("CoatingInterior", half_scint_x, half_scint_y, half_scint_z);
     G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
     G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
     auto rot180 = new G4RotationMatrix();
@@ -84,9 +83,9 @@ G4PVPlacement* make_geometry() {
     // auto cylinder_offset = 1.5*cm;
     auto scintillator_offset = 22.5*mm;
     // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-    n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).check(true).now();
-    n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).check(true).now();
-    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).check(true).now();
-    n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).check(true).now();
+    n4::place(scintillator).in(world).at({0, 0,  scintillator_offset}).copy_no(0).now();
+    n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
+    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
     return n4::place(world).now();
 }
