@@ -17,7 +17,7 @@
 #include <G4ThreeVector.hh>
 #include <G4Tubs.hh>
 
-G4PVPlacement* geometry() {
+G4PVPlacement* make_geometry() {
     auto fLXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
 
     std::vector<G4double> lxe_Energy = {7.0 * eV, 7.07 * eV, 7.14 * eV};

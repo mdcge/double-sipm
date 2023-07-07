@@ -3,6 +3,6 @@
 
 #include <G4PVPlacement.hh>
 
-G4PVPlacement* geometry();
+G4PVPlacement* make_geometry();
 
 #endif // GEOMETRY_H_
