@@ -38,9 +38,12 @@ int main(int argc, char *argv[]) {
         {G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial)};
 
     // Physics list must be attached to run manager before instantiating other user action classes
+    //auto make_actions = new n4::actions{two_gammas};
     run_manager -> SetUserInitialization(physics_list);
-    run_manager -> SetUserInitialization(new n4::actions{two_gammas});
-    run_manager -> SetUserInitialization(new n4::geometry{geometry});
+    run_manager -> SetUserInitialization((new n4::actions{two_gammas})
+                                         -> set((new n4::run_action())
+                                                -> end([] (G4Run const* run) {G4cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX" << G4endl;})));
+    run_manager -> SetUserInitialization(new n4::geometry{make_geometry});
 
 
     // Initialize visualization
