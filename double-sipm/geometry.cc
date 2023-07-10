@@ -39,26 +39,38 @@ G4PVPlacement* make_geometry() {
         .done();
     fLXe->SetMaterialPropertiesTable(fLXe_mt);
 
-    std::vector<G4double> energy = {1.239841939*eV/0.25, 1.239841939*eV/0.9}; // denominator is wavelength in micrometres
+    std::vector<G4double> energy = {1.239841939*eV/0.35, 1.239841939*eV/0.54, 1.239841939*eV/0.7, 1.239841939*eV/0.9}; // denominator is wavelength in micrometres
 
     auto csi = n4::material("G4_CESIUM_IODIDE");
-    std::vector<G4double> rindex_csi = {2.2094, 1.7611};
+    //std::vector<G4double> rindex_csi = {2.2094, 1.7611};
+    std::vector<G4double> rindex_csi = {1.79, 1.79, 1.79, 1.79}; // values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
+    std::vector<G4double> scint_csi = {0.0, 1.0, 0.1, 0.0}; // Fig. 2 in the paper
     G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
         .add("RINDEX", energy, rindex_csi)
-        .add("SCINTILLATIONYIELD", 100000./eV)
-        .add("SCINTILLATIONYIELD1", 0.03)
+        .add("SCINTILLATIONYIELD", 65000. / MeV)
+        .add("SCINTILLATIONTIMECONSTANT1", 700. * ns)
+        .add("SCINTILLATIONTIMECONSTANT2", 3500. * ns)
+        .add("RESOLUTIONSCALE", 1.0)
+        .add("SCINTILLATIONYIELD1", 0.57)
+        .add("SCINTILLATIONYIELD2", 0.43)
+        .add("SCINTILLATIONCOMPONENT1", energy, scint_csi)
+        .add("SCINTILLATIONCOMPONENT2", energy, scint_csi)
+        .add("ABSLENGTH", energy, {5.*m, 5.*m, 5.*m, 5.*m})
         .done();
+    csi -> GetIonisation() -> SetBirksConstant(0.00152 * mm/MeV);
     csi -> SetMaterialPropertiesTable(mpt_csi);
 
     auto air = n4::material("G4_AIR");
-    std::vector<G4double> rindex_air = {1.0, 1.0};
+    std::vector<G4double> rindex_air = {1.0, 1.0, 1.0, 1.0};
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
         .add("RINDEX", energy, rindex_air)
         .done();
     air -> SetMaterialPropertiesTable(mpt_air);
 
     auto teflon = n4::material("G4_TEFLON");
-    std::vector<G4double> rindex_teflon = {1.305, 1.28}; // taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
+    // Values could be taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
+    // but are also stated in the same paper as above
+    std::vector<G4double> rindex_teflon = {1.35, 1.35, 1.35, 1.35};
     G4MaterialPropertiesTable *mpt_teflon = n4::material_properties()
         .add("RINDEX", energy, rindex_teflon)
         .done();
@@ -69,7 +81,7 @@ G4PVPlacement* make_geometry() {
     G4double half_world_size = 50*mm;
     G4double coating_thck = 0.5*mm;
     // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-    auto scintillator = n4::volume<G4Box>("Scintillator", fLXe, half_scint_x, half_scint_y, half_scint_z);
+    auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
 
     G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
     G4VSolid* coating_int = new G4Box("CoatingInterior", half_scint_x, half_scint_y, half_scint_z);
