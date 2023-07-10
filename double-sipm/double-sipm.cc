@@ -27,6 +27,7 @@
 #include <memory>
 
 
+// Main part of run action
 void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
     G4double step_edep_0 = 0;
     G4double step_edep_1 = 0;
@@ -51,14 +52,19 @@ void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const
 
 int main(int argc, char *argv[]) {
 
-    auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
-
     G4double total_edep_0 = 0;
     G4double total_edep_1 = 0;
     std::ofstream data_file;
 
+    // User action functions ------------------------
+    // Generator
+    auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
+
+    // Run actions
     auto open_file = [&data_file] (G4Run const* run) { data_file.open("G4_data_test.csv"); };
     auto close_file = [&data_file] (G4Run const* run) { data_file.close(); };
+
+    // Event actions
     auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
         total_edep_0 = 0;
         total_edep_1 = 0;
@@ -69,8 +75,12 @@ int main(int argc, char *argv[]) {
 
         data_file << total_edep_0 << "," << total_edep_1 << std::endl;
     };
+
+    // Stepping action
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
     auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
+
+    // Stacking action
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) {
@@ -81,6 +91,7 @@ int main(int argc, char *argv[]) {
         }
     };
 
+    // Setting mandatory G4 objects --------------------------
     G4int verbosity = 0;
     auto physics_list = new FTFP_BERT{verbosity};
     physics_list -> ReplacePhysics(new G4EmStandardPhysics_option4());
