@@ -55,11 +55,19 @@ int main(int argc, char *argv[]) {
 
     G4double total_edep_0 = 0;
     G4double total_edep_1 = 0;
+    std::ofstream data_file;
 
-    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Run const* run) { total_edep_0 = 0; total_edep_1 = 0; };
-    auto print_total_edep = [&total_edep_0, &total_edep_1] (G4Run const* run) {
+    auto open_file = [&data_file] (G4Run const* run) { data_file.open("G4_data_test.csv"); };
+    auto close_file = [&data_file] (G4Run const* run) { data_file.close(); };
+    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
+        total_edep_0 = 0;
+        total_edep_1 = 0;
+    };
+    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
         G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
         G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+
+        data_file << total_edep_0 << "," << total_edep_1 << std::endl;
     };
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
     auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
@@ -85,6 +93,9 @@ int main(int argc, char *argv[]) {
     run_manager -> SetUserInitialization(physics_list);
     run_manager -> SetUserInitialization((new n4::actions{two_gammas})
                                          -> set((new n4::run_action())
+                                                -> begin(open_file)
+                                                -> end(close_file))
+                                         -> set((new n4::event_action())
                                                 -> begin(reset_total_edep)
                                                 -> end(print_total_edep))
                                          -> set((new n4::stepping_action{accumulate_energy}))
