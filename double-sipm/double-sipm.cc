@@ -39,7 +39,8 @@ int main(int argc, char *argv[]) {
 
     G4double total_edep = 0;
 
-    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " << total_edep << G4endl; };
+    auto reset_total_edep = [&total_edep] (G4Run const* run) { total_edep = 0; };
+    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << "Total deposited energy: " << total_edep << G4endl; };
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
     auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
     auto kill_secondaries = [] (G4Track const* track) {
@@ -64,6 +65,7 @@ int main(int argc, char *argv[]) {
     run_manager -> SetUserInitialization(physics_list);
     run_manager -> SetUserInitialization((new n4::actions{two_gammas})
                                          -> set((new n4::run_action())
+                                                -> begin(reset_total_edep)
                                                 -> end(print_total_edep))
                                          -> set((new n4::stepping_action{accumulate_energy}))
                                          -> set((new n4::stacking_action())
