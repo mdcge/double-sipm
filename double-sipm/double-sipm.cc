@@ -27,7 +27,7 @@
 #include <memory>
 
 
-void xxx (G4double& total_edep, G4Step const* step) {
+void add_step_edep (G4double& total_edep, G4Step const* step) {
     G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
     G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
     total_edep += pre_energy - post_energy;
@@ -39,9 +39,18 @@ int main(int argc, char *argv[]) {
 
     G4double total_edep = 0;
 
-    auto run_action_end = [&total_edep] (G4Run const* run) { G4cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " << total_edep << G4endl; };
-    // This can be used to move the closure "out of scope" (xxx is outside of main)
-    auto step_action = [&total_edep] (G4Step const* step) { xxx(total_edep, step); };
+    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX " << total_edep << G4endl; };
+    // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
+    auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
+    auto kill_secondaries = [] (G4Track const* track) {
+        G4int parent_ID = track -> GetParentID();
+        if (parent_ID > 0) {
+            return G4ClassificationOfNewTrack::fKill;
+        }
+        else {
+            return G4ClassificationOfNewTrack::fUrgent;
+        }
+    };
 
     G4int verbosity = 0;
     auto physics_list = new FTFP_BERT{verbosity};
@@ -55,8 +64,10 @@ int main(int argc, char *argv[]) {
     run_manager -> SetUserInitialization(physics_list);
     run_manager -> SetUserInitialization((new n4::actions{two_gammas})
                                          -> set((new n4::run_action())
-                                                -> end(run_action_end))
-                                         -> set((new n4::stepping_action{step_action})));
+                                                -> end(print_total_edep))
+                                         -> set((new n4::stepping_action{accumulate_energy}))
+                                         -> set((new n4::stacking_action())
+                                                -> classify(kill_secondaries)));
     run_manager -> SetUserInitialization(new n4::geometry{make_geometry});
 
 
