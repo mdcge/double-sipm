@@ -27,30 +27,42 @@
 #include <memory>
 
 
-void add_step_edep (G4double& total_edep, G4Step const* step) {
-    G4double step_edep;
-    G4String step_mat_name = step -> GetPreStepPoint() -> GetMaterial() -> GetName();
-    if (step_mat_name == "LXe") {
+void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
+    G4double step_edep_0 = 0;
+    G4double step_edep_1 = 0;
+    auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
+    if (step_solid_name == "Scintillator-0") {
         G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
         G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-        step_edep = pre_energy - post_energy;
+        step_edep_0 = pre_energy - post_energy;
+    }
+    else if (step_solid_name == "Scintillator-1") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep_1 = pre_energy - post_energy;
     }
     else {
-        step_edep = 0;
+        step_edep_0 = 0;
+        step_edep_1 = 0;
     }
-    total_edep += step_edep;
+    total_edep_0 += step_edep_0;
+    total_edep_1 += step_edep_1;
 }
 
 int main(int argc, char *argv[]) {
 
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
-    G4double total_edep = 0;
+    G4double total_edep_0 = 0;
+    G4double total_edep_1 = 0;
 
-    auto reset_total_edep = [&total_edep] (G4Run const* run) { total_edep = 0; };
-    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << G4endl << "Total deposited energy: " << total_edep << G4endl << G4endl; };
+    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Run const* run) { total_edep_0 = 0; total_edep_1 = 0; };
+    auto print_total_edep = [&total_edep_0, &total_edep_1] (G4Run const* run) {
+        G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
+        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+    };
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
-    auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
+    auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) {
