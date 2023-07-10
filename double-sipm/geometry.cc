@@ -9,6 +9,8 @@
 #include <G4LogicalVolume.hh>
 #include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
+#include <G4OpticalSurface.hh>
+#include <G4LogicalBorderSurface.hh>
 #include <G4RotationMatrix.hh>
 #include <G4SubtractionSolid.hh>
 #include <G4RunManagerFactory.hh>
@@ -99,5 +101,39 @@ G4PVPlacement* make_geometry() {
     n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
     n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
     n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
+
+    // Check which world's daughter is which object
+    //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
+
+    // TO BE CHANGED!!!!!!
+    G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
+
+    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
+    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
+
+    OpSurface->SetType(dielectric_dielectric);
+    OpSurface->SetModel(unified);
+    OpSurface->SetFinish(groundbackpainted);
+    OpSurface->SetSigmaAlpha(0.1);
+
+    std::vector<G4double> pp = {2.038*eV, 4.144*eV};
+    std::vector<G4double> specularlobe = {0.3, 0.3};
+    std::vector<G4double> specularspike = {0.2, 0.2};
+    std::vector<G4double> backscatter = {0.1, 0.1};
+    std::vector<G4double> rindex = {1.35, 1.40};
+    std::vector<G4double> reflectivity = {0.3, 0.5};
+    std::vector<G4double> efficiency = {0.8, 0.1};
+
+    G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
+
+    SMPT->AddProperty("RINDEX", pp, rindex);
+    SMPT->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
+    SMPT->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
+    SMPT->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
+    SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
+    SMPT->AddProperty("EFFICIENCY", pp, efficiency);
+
+    OpSurface->SetMaterialPropertiesTable(SMPT);
+
     return n4::place(world).now();
 }
