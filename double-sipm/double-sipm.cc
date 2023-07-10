@@ -28,9 +28,17 @@
 
 
 void add_step_edep (G4double& total_edep, G4Step const* step) {
-    G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
-    G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-    total_edep += pre_energy - post_energy;
+    G4double step_edep;
+    G4String step_mat_name = step -> GetPreStepPoint() -> GetMaterial() -> GetName();
+    if (step_mat_name == "LXe") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep = pre_energy - post_energy;
+    }
+    else {
+        step_edep = 0;
+    }
+    total_edep += step_edep;
 }
 
 int main(int argc, char *argv[]) {
@@ -40,7 +48,7 @@ int main(int argc, char *argv[]) {
     G4double total_edep = 0;
 
     auto reset_total_edep = [&total_edep] (G4Run const* run) { total_edep = 0; };
-    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << "Total deposited energy: " << total_edep << G4endl; };
+    auto print_total_edep = [&total_edep] (G4Run const* run) { G4cout << G4endl << "Total deposited energy: " << total_edep << G4endl << G4endl; };
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
     auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
     auto kill_secondaries = [] (G4Track const* track) {
