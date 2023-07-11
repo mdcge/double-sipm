@@ -6,6 +6,7 @@
 #include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
 #include <G4EmStandardPhysics_option4.hh>
+#include <G4HCofThisEvent.hh>
 #include <G4LogicalVolume.hh>
 #include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
@@ -120,6 +121,20 @@ G4PVPlacement* make_geometry() {
             }
         }
     }
+
+    auto process_hits = [](G4Step* step) {
+        G4Track* track = step -> GetTrack();
+        track -> SetTrackStatus(fStopAndKill);
+
+        G4StepPoint* pre_point = step -> GetPreStepPoint();
+        G4StepPoint* post_point = step -> GetPostStepPoint();
+        G4ThreeVector photon_pos = pre_point -> GetPosition();
+        G4cout << "XXXXXXXXXXXXXXXXXXX " << photon_pos << G4endl;
+        return true;
+    };
+    auto end_of_event = [](G4HCofThisEvent* what) {};
+    auto sens_detector = new n4::sensitive_detector("Detector", process_hits, end_of_event);
+    detector -> SetSensitiveDetector(sens_detector);
 
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
