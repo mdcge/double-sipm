@@ -78,11 +78,9 @@ G4PVPlacement* make_geometry() {
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
-    // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
     G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
     G4double half_world_size = 50*mm;
     G4double coating_thck = 0.5*mm;
-    // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
     auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
 
     G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
@@ -92,15 +90,36 @@ G4PVPlacement* make_geometry() {
     auto rot180 = new G4RotationMatrix();
     rot180 -> rotateY(180*deg);
 
+    G4int nb_detectors_per_side = 3;
+    G4double half_detector_width = half_scint_x / nb_detectors_per_side; // assumes the detectors are square
+    G4double half_detector_depth = half_detector_width; // this will make the detectors cubes
+    auto detector = n4::volume<G4Box>("Detector", air, half_detector_width, half_detector_width, half_detector_depth); // material doesn't matter
+
     auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
 
-    // auto cylinder_offset = 1.5*cm;
     auto scintillator_offset = 22.5*mm;
-    // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
+
     n4::place(scintillator).in(world).at({0, 0,  scintillator_offset}).copy_no(0).now();
     n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
     n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
     n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
+
+    for (G4int side=0; side<2; side++) {
+        for (G4int i=0; i<nb_detectors_per_side; i++) {
+            for (G4int j=0; j<nb_detectors_per_side; j++) {
+                G4double xpos = (i - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
+                G4double ypos = (j - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
+                G4double zpos;
+                if (side == 0) { zpos = scintillator_offset+half_scint_z+half_detector_depth; }
+                else { zpos = -(scintillator_offset+half_scint_z+half_detector_depth); }
+                n4::place(detector)
+                    .in(world)
+                    .at({xpos, ypos, zpos})
+                    .copy_no(side*pow(nb_detectors_per_side, 2) + i*nb_detectors_per_side + j)
+                    .now();
+            }
+        }
+    }
 
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
@@ -108,20 +127,21 @@ G4PVPlacement* make_geometry() {
     // TO BE CHANGED!!!!!!
     G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
 
-    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
-    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
-
     OpSurface->SetType(dielectric_dielectric);
     OpSurface->SetModel(unified);
     OpSurface->SetFinish(groundbackpainted);
     OpSurface->SetSigmaAlpha(0.1);
+
+    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
+    // this seems to apply the surface to the two physical objects without needing assignment
+    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
 
     std::vector<G4double> pp = {2.038*eV, 4.144*eV};
     std::vector<G4double> specularlobe = {0.3, 0.3};
     std::vector<G4double> specularspike = {0.2, 0.2};
     std::vector<G4double> backscatter = {0.1, 0.1};
     std::vector<G4double> rindex = {1.35, 1.40};
-    std::vector<G4double> reflectivity = {0.3, 0.5};
+    std::vector<G4double> reflectivity = {1.0, 1.0};
     std::vector<G4double> efficiency = {0.8, 0.1};
 
     G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
