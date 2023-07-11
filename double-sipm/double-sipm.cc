@@ -16,6 +16,8 @@
 #include <G4RandomDirection.hh>
 #include <G4ThreeVector.hh>
 #include <G4Tubs.hh>
+#include <G4Run.hh>
+#include <G4Step.hh>
 
 #include <G4UIExecutive.hh>
 #include <G4UImanager.hh>
@@ -25,10 +27,71 @@
 #include <memory>
 
 
+// Main part of run action
+void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
+    G4double step_edep_0 = 0;
+    G4double step_edep_1 = 0;
+    auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
+    if (step_solid_name == "Scintillator-0") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep_0 = pre_energy - post_energy;
+    }
+    else if (step_solid_name == "Scintillator-1") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep_1 = pre_energy - post_energy;
+    }
+    else {
+        step_edep_0 = 0;
+        step_edep_1 = 0;
+    }
+    total_edep_0 += step_edep_0;
+    total_edep_1 += step_edep_1;
+}
+
 int main(int argc, char *argv[]) {
 
+    G4double total_edep_0 = 0;
+    G4double total_edep_1 = 0;
+    std::ofstream data_file;
+
+    // User action functions ------------------------
+    // Generator
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
+    // Run actions
+    auto open_file = [&data_file] (G4Run const* run) { data_file.open("G4_data_test.csv"); };
+    auto close_file = [&data_file] (G4Run const* run) { data_file.close(); };
+
+    // Event actions
+    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
+        total_edep_0 = 0;
+        total_edep_1 = 0;
+    };
+    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
+        G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
+        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+
+        data_file << total_edep_0 << "," << total_edep_1 << std::endl;
+    };
+
+    // Stepping action
+    // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
+    auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
+
+    // Stacking action
+    auto kill_secondaries = [] (G4Track const* track) {
+        G4int parent_ID = track -> GetParentID();
+        if (parent_ID > 0) {
+            return G4ClassificationOfNewTrack::fKill;
+        }
+        else {
+            return G4ClassificationOfNewTrack::fUrgent;
+        }
+    };
+
+    // Setting mandatory G4 objects --------------------------
     G4int verbosity = 0;
     auto physics_list = new FTFP_BERT{verbosity};
     physics_list -> ReplacePhysics(new G4EmStandardPhysics_option4());
@@ -39,8 +102,17 @@ int main(int argc, char *argv[]) {
 
     // Physics list must be attached to run manager before instantiating other user action classes
     run_manager -> SetUserInitialization(physics_list);
-    run_manager -> SetUserInitialization(new n4::actions{two_gammas});
-    run_manager -> SetUserInitialization(new n4::geometry{geometry});
+    run_manager -> SetUserInitialization((new n4::actions{two_gammas})
+                                         -> set((new n4::run_action())
+                                                -> begin(open_file)
+                                                -> end(close_file))
+                                         -> set((new n4::event_action())
+                                                -> begin(reset_total_edep)
+                                                -> end(print_total_edep))
+                                         -> set((new n4::stepping_action{accumulate_energy}))
+                                         -> set((new n4::stacking_action())
+                                                -> classify(kill_secondaries)));
+    run_manager -> SetUserInitialization(new n4::geometry{make_geometry});
 
 
     // Initialize visualization

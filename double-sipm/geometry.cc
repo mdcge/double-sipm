@@ -9,6 +9,8 @@
 #include <G4LogicalVolume.hh>
 #include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
+#include <G4OpticalSurface.hh>
+#include <G4LogicalBorderSurface.hh>
 #include <G4RotationMatrix.hh>
 #include <G4SubtractionSolid.hh>
 #include <G4RunManagerFactory.hh>
@@ -39,26 +41,38 @@ G4PVPlacement* make_geometry() {
         .done();
     fLXe->SetMaterialPropertiesTable(fLXe_mt);
 
-    std::vector<G4double> energy = {1.239841939*eV/0.25, 1.239841939*eV/0.9}; // denominator is wavelength in micrometres
+    std::vector<G4double> energy = {1.239841939*eV/0.35, 1.239841939*eV/0.54, 1.239841939*eV/0.7, 1.239841939*eV/0.9}; // denominator is wavelength in micrometres
 
     auto csi = n4::material("G4_CESIUM_IODIDE");
-    std::vector<G4double> rindex_csi = {2.2094, 1.7611};
+    //std::vector<G4double> rindex_csi = {2.2094, 1.7611};
+    std::vector<G4double> rindex_csi = {1.79, 1.79, 1.79, 1.79}; // values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
+    std::vector<G4double> scint_csi = {0.0, 1.0, 0.1, 0.0}; // Fig. 2 in the paper
     G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
         .add("RINDEX", energy, rindex_csi)
-        .add("SCINTILLATIONYIELD", 100000./eV)
-        .add("SCINTILLATIONYIELD1", 0.03)
+        .add("SCINTILLATIONYIELD", 65000. / MeV)
+        .add("SCINTILLATIONTIMECONSTANT1", 700. * ns)
+        .add("SCINTILLATIONTIMECONSTANT2", 3500. * ns)
+        .add("RESOLUTIONSCALE", 1.0)
+        .add("SCINTILLATIONYIELD1", 0.57)
+        .add("SCINTILLATIONYIELD2", 0.43)
+        .add("SCINTILLATIONCOMPONENT1", energy, scint_csi)
+        .add("SCINTILLATIONCOMPONENT2", energy, scint_csi)
+        .add("ABSLENGTH", energy, {5.*m, 5.*m, 5.*m, 5.*m})
         .done();
+    csi -> GetIonisation() -> SetBirksConstant(0.00152 * mm/MeV);
     csi -> SetMaterialPropertiesTable(mpt_csi);
 
     auto air = n4::material("G4_AIR");
-    std::vector<G4double> rindex_air = {1.0, 1.0};
+    std::vector<G4double> rindex_air = {1.0, 1.0, 1.0, 1.0};
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
         .add("RINDEX", energy, rindex_air)
         .done();
     air -> SetMaterialPropertiesTable(mpt_air);
 
     auto teflon = n4::material("G4_TEFLON");
-    std::vector<G4double> rindex_teflon = {1.305, 1.28}; // taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
+    // Values could be taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
+    // but are also stated in the same paper as above
+    std::vector<G4double> rindex_teflon = {1.35, 1.35, 1.35, 1.35};
     G4MaterialPropertiesTable *mpt_teflon = n4::material_properties()
         .add("RINDEX", energy, rindex_teflon)
         .done();
@@ -69,11 +83,10 @@ G4PVPlacement* make_geometry() {
     G4double half_world_size = 50*mm;
     G4double coating_thck = 0.5*mm;
     // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-    auto scintillator_r = n4::volume<G4Box>("ScintillatorR", fLXe, half_scint_x, half_scint_y, half_scint_z);
-    auto scintillator_l = n4::volume<G4Box>("ScintillatorL", csi, half_scint_x, half_scint_y, half_scint_z);
+    auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
 
     G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
-    G4VSolid* coating_int = new G4Box("CoatingInt", half_scint_x, half_scint_y, half_scint_z);
+    G4VSolid* coating_int = new G4Box("CoatingInterior", half_scint_x, half_scint_y, half_scint_z);
     G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
     G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
     auto rot180 = new G4RotationMatrix();
@@ -84,9 +97,43 @@ G4PVPlacement* make_geometry() {
     // auto cylinder_offset = 1.5*cm;
     auto scintillator_offset = 22.5*mm;
     // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-    n4::place(scintillator_r).in(world).at({0, 0, scintillator_offset}).check(true).now();
-    n4::place(scintillator_l).in(world).at({0, 0, -scintillator_offset}).check(true).now();
-    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).check(true).now();
-    n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).check(true).now();
+    n4::place(scintillator).in(world).at({0, 0,  scintillator_offset}).copy_no(0).now();
+    n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
+    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
+
+    // Check which world's daughter is which object
+    //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
+
+    // TO BE CHANGED!!!!!!
+    G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
+
+    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
+    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
+
+    OpSurface->SetType(dielectric_dielectric);
+    OpSurface->SetModel(unified);
+    OpSurface->SetFinish(groundbackpainted);
+    OpSurface->SetSigmaAlpha(0.1);
+
+    std::vector<G4double> pp = {2.038*eV, 4.144*eV};
+    std::vector<G4double> specularlobe = {0.3, 0.3};
+    std::vector<G4double> specularspike = {0.2, 0.2};
+    std::vector<G4double> backscatter = {0.1, 0.1};
+    std::vector<G4double> rindex = {1.35, 1.40};
+    std::vector<G4double> reflectivity = {0.3, 0.5};
+    std::vector<G4double> efficiency = {0.8, 0.1};
+
+    G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
+
+    SMPT->AddProperty("RINDEX", pp, rindex);
+    SMPT->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
+    SMPT->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
+    SMPT->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
+    SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
+    SMPT->AddProperty("EFFICIENCY", pp, efficiency);
+
+    OpSurface->SetMaterialPropertiesTable(SMPT);
+
     return n4::place(world).now();
 }
