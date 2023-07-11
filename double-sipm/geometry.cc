@@ -99,10 +99,13 @@ G4PVPlacement* make_geometry() {
 
     auto rot180 = new G4RotationMatrix(); rot180 -> rotateY(180*deg);
 
+    G4int nb_detectors_per_side = 3;
+    G4double half_detector_width = scint_xy / 2 / nb_detectors_per_side; // assumes the detectors are square
+    G4double half_detector_depth = half_detector_width; // this will make the detectors cubes
+    auto detector = n4::volume<G4Box>("Detector", air, half_detector_width, half_detector_width, half_detector_depth); // material doesn't matter
+
     auto world = n4::box{"World"}.cube(world_size).volume(air);
 
-    // auto cylinder_offset = 1.5*cm;
-    // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
     auto scintillator_offset = 22.5*mm;
     auto scintillator = coating_interior.name("Scintillator").volume(csi);
     n4::place(scintillator)   .in(world)                .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
@@ -110,19 +113,37 @@ G4PVPlacement* make_geometry() {
     n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
     n4::place(coating_logical).in(world)                .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
+    for (G4int side=0; side<2; side++) {
+        for (G4int i=0; i<nb_detectors_per_side; i++) {
+            for (G4int j=0; j<nb_detectors_per_side; j++) {
+                G4double xpos = (i - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
+                G4double ypos = (j - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
+                G4double zpos;
+                if (side == 0) { zpos =   scintillator_offset + scint_z/2 + half_detector_depth;  }
+                else           { zpos = -(scintillator_offset + scint_z/2 + half_detector_depth); }
+                n4::place(detector)
+                    .in(world)
+                    .at({xpos, ypos, zpos})
+                    .copy_no(side*pow(nb_detectors_per_side, 2) + i*nb_detectors_per_side + j)
+                    .now();
+            }
+        }
+    }
+
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
 
     // TO BE CHANGED!!!!!!
     G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
 
-    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
-    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
-
     OpSurface->SetType(dielectric_dielectric);
     OpSurface->SetModel(unified);
     OpSurface->SetFinish(groundbackpainted);
     OpSurface->SetSigmaAlpha(0.1);
+
+    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
+    // this seems to apply the surface to the two physical objects without needing assignment
+    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
 
     vec_double pp = {2.038*eV, 4.144*eV};
     OpSurface -> SetMaterialPropertiesTable(
@@ -131,7 +152,7 @@ G4PVPlacement* make_geometry() {
            .add("SPECULARLOBECONSTANT"  , pp, {0.2 , 0.2 })
            .add("SPECULARSPIKECONSTANT" , pp, {0.1 , 0.1 })
            .add("BACKSCATTERCONSTANT"   , pp, {1.35, 1.40})
-           .add("REFLECTIVITY"          , pp, {0.3 , 0.5 })
+           .add("REFLECTIVITY"          , pp, {1.0 , 1.0 })
            .add("EFFICIENCY"            , pp, {0.8 , 0.1 })
            .done()
     );
