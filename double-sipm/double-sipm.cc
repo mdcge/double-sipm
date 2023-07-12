@@ -26,29 +26,8 @@
 #include <iostream>
 #include <memory>
 
+void add_step_edep(G4double& total_edep_0, G4double& total_edep_1, G4Step const* step);
 
-// Main part of run action
-void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
-    G4double step_edep_0 = 0;
-    G4double step_edep_1 = 0;
-    auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
-    if (step_solid_name == "Scintillator-0") {
-        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
-        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-        step_edep_0 = pre_energy - post_energy;
-    }
-    else if (step_solid_name == "Scintillator-1") {
-        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
-        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-        step_edep_1 = pre_energy - post_energy;
-    }
-    else {
-        step_edep_0 = 0;
-        step_edep_1 = 0;
-    }
-    total_edep_0 += step_edep_0;
-    total_edep_1 += step_edep_1;
-}
 
 int main(int argc, char *argv[]) {
 
@@ -68,19 +47,23 @@ int main(int argc, char *argv[]) {
     auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
         total_edep_0 = 0;
         total_edep_1 = 0;
+        photon_count_0 = 0;
+        photon_count_1 = 0;
     };
-    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
+    auto write_photon_count = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
         G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
         G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+        G4cout << "Photon count 0: " << photon_count_0 << G4endl;
+        G4cout << "Photon count 1: " << photon_count_1 << G4endl;
 
-        data_file << total_edep_0 << "," << total_edep_1 << std::endl;
+        data_file << photon_count_0 << "," << photon_count_1 << std::endl;
     };
 
     // Stepping action
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
     auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
 
-    // Stacking action
+    // Stacking action: this is used to disable scintillation if needed
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) {
@@ -108,10 +91,10 @@ int main(int argc, char *argv[]) {
                                                 -> end(close_file))
                                          -> set((new n4::event_action())
                                                 -> begin(reset_total_edep)
-                                                -> end(print_total_edep))
-                                         -> set((new n4::stepping_action{accumulate_energy}))
-                                         -> set((new n4::stacking_action())
-                                                -> classify(kill_secondaries)));
+                                                -> end(write_photon_count))
+                                         -> set((new n4::stepping_action{accumulate_energy})));
+                                         // -> set((new n4::stacking_action())
+                                         //        -> classify(kill_secondaries)));
     run_manager -> SetUserInitialization(new n4::geometry{make_geometry});
 
 
@@ -136,4 +119,28 @@ int main(int argc, char *argv[]) {
         ui->SessionStart();
     }
 
+}
+
+
+// Main part of stepping action, adds the step edep to the total edep
+void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
+    G4double step_edep_0 = 0;
+    G4double step_edep_1 = 0;
+    auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
+    if (step_solid_name == "Scintillator-0") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep_0 = pre_energy - post_energy;
+    }
+    else if (step_solid_name == "Scintillator-1") {
+        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
+        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+        step_edep_1 = pre_energy - post_energy;
+    }
+    else {
+        step_edep_0 = 0;
+        step_edep_1 = 0;
+    }
+    total_edep_0 += step_edep_0;
+    total_edep_1 += step_edep_1;
 }

@@ -20,6 +20,10 @@
 #include <G4ThreeVector.hh>
 #include <G4Tubs.hh>
 
+
+G4int photon_count_0 = 0;
+G4int photon_count_1 = 0;
+
 G4PVPlacement* make_geometry() {
     auto fLXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
 
@@ -122,14 +126,17 @@ G4PVPlacement* make_geometry() {
         }
     }
 
-    auto process_hits = [](G4Step* step) {
+    auto process_hits = [nb_detectors_per_side](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
-        G4StepPoint* pre_point = step -> GetPreStepPoint();
-        G4StepPoint* post_point = step -> GetPostStepPoint();
-        G4ThreeVector photon_pos = pre_point -> GetPosition();
-        G4cout << "XXXXXXXXXXXXXXXXXXX " << photon_pos << G4endl;
+        G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
+        if (copy_nb < pow(nb_detectors_per_side, 2)) {
+            photon_count_0 += 1;
+        }
+        else {
+            photon_count_1 += 1;
+        }
         return true;
     };
     auto end_of_event = [](G4HCofThisEvent* what) {};
