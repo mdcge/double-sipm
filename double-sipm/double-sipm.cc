@@ -60,21 +60,28 @@ int main(int argc, char *argv[]) {
     auto  open_file = [&data_file] (G4Run const*) { data_file.open("G4_data_test.csv"); };
     auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
 
-    // Accumulators for energy deposited in each scintillator during a single event
+    // Accumulators for energy and photons observed in each scintillator during a single event
     std::vector<G4double> total_edep{0, 0};
-    // At the start of each event: reset the energy accumulators to zero
-    auto reset_total_edep = [&total_edep] (G4Event const*) { total_edep[0] = total_edep[1] = 0; };
+    std::vector<G4int>  photon_count{0, 0};
+    // At the start of each event: reset the accumulators to zero
+    auto reset_total_edep = [&total_edep, &photon_count] (G4Event const*) {
+        total_edep  [0] = total_edep  [1] = 0;
+        photon_count[0] = photon_count[1] = 0;
+    };
     // At the end of each event: record total energy deposited
-    auto print_total_edep = [&data_file, &total_edep] (G4Event const*) {
-        G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep[0]
-               << "\nTotal deposited energy in scintillator 1: " << total_edep[1] << G4endl << G4endl;
-        data_file << total_edep[0] << "," << total_edep[1] << std::endl;
+    auto write_photon_count = [&data_file, &total_edep, &photon_count] (G4Event const*) {
+        G4cout << "\nTotal deposited energy in scintillator 0: "  << total_edep[0]
+               << "\nTotal deposited energy in scintillator 1: " << total_edep[1]
+               << "\n\nPhoton count 0: " << photon_count[0]
+               <<   "\nPhoton count 1: " << photon_count[1] << G4endl;
+        data_file << photon_count[0] << "," << photon_count[1] << std::endl;
     };
 
     // At every step: increment running total of deposited energy during the event
     auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
 
-    // Don't simulate secondaries: total energy deposited by gammas is enough for now
+    // If needed, use this as stacking_action -> classify, to disable tracking
+    // of scintillation products
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) { return G4ClassificationOfNewTrack::fKill;   }
@@ -84,17 +91,17 @@ int main(int argc, char *argv[]) {
     // Setting mandatory G4 objects --------------------------
     auto run_manager = n4::run_manager::create()
         .physics(physics_list)
-        .geometry(make_geometry)
-        .actions([&] {return (new n4::actions{two_gammas})
+        .geometry([&]{ return make_geometry(photon_count); })
+        .actions( [&]{ return (new n4::actions{two_gammas})
             -> set((new n4::run_action())
                    -> begin(open_file)
                    -> end (close_file))
             -> set((new n4::event_action())
                    -> begin(reset_total_edep)
-                   -> end  (print_total_edep))
-            -> set((new n4::stepping_action{accumulate_energy}))
-            -> set((new n4::stacking_action())
-                   -> classify(kill_secondaries));});
+                   -> end(write_photon_count))
+            -> set((new n4::stepping_action{accumulate_energy}));});
+            // -> set((new n4::stacking_action())
+            //        -> classify(kill_secondaries));});
 
     // Run the simulation
     // + No CLI arguments: open GUI

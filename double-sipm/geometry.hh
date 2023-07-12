@@ -3,6 +3,9 @@
 
 #include <G4PVPlacement.hh>
 
-G4PVPlacement* make_geometry();
+extern G4int photon_count_0;
+extern G4int photon_count_1;
+
+G4PVPlacement* make_geometry(std::vector<int>& photon_count);
 
 #endif // GEOMETRY_H_

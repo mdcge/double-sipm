@@ -25,10 +25,11 @@
 #include <G4Types.hh>
 
 using vec_double = std::vector<G4double>;
+using vec_int    = std::vector<G4int>;
 
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
-G4PVPlacement* make_geometry() {
+G4PVPlacement* make_geometry(vec_int& photon_count) {
     auto LXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
 
     auto       lxe_energy    = n4::scale_by(eV, { 7.0 ,  7.07,  7.14});
@@ -131,14 +132,13 @@ G4PVPlacement* make_geometry() {
         }
     }
 
-    auto process_hits = [](G4Step* step) {
+    auto process_hits = [nb_detectors_per_side, &photon_count](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
-        G4StepPoint* pre_point = step -> GetPreStepPoint();
-        G4StepPoint* post_point = step -> GetPostStepPoint();
-        G4ThreeVector photon_pos = pre_point -> GetPosition();
-        G4cout << "XXXXXXXXXXXXXXXXXXX " << photon_pos << G4endl;
+        G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
+        if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; }
+        else                                         { photon_count[1]++; }
         return true;
     };
     auto end_of_event = [](G4HCofThisEvent* what) {};
