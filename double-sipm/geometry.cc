@@ -156,7 +156,7 @@ G4PVPlacement* make_geometry() {
 
     // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(2), world->GetDaughter(0), OpSurface);
+    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(0), world->GetDaughter(2), OpSurface);
 
     std::vector<G4double> pp = {2.038*eV, 4.144*eV};
     std::vector<G4double> specularlobe = {0.3, 0.3};
