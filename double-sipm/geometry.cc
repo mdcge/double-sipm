@@ -29,26 +29,6 @@ using vec_int    = std::vector<G4int>;
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
 G4PVPlacement* make_geometry(vec_int& photon_count) {
-    auto LXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
-
-    auto       lxe_energy    = n4::scale_by(eV, { 7.0 ,  7.07,  7.14});
-    vec_double lxe_rindex    =                  { 1.59,  1.57,  1.54};
-    vec_double lxe_scint     =                  { 0.1 ,  1.0 ,  0.1 };
-    auto       lxe_abslength = n4::scale_by(cm, {35   , 35   , 35   });
-    G4MaterialPropertiesTable *LXe_properties = n4::material_properties()
-        .add("RINDEX"                 , lxe_energy, lxe_rindex)
-        .add("SCINTILLATIONCOMPONENT1", lxe_energy, lxe_scint)
-        .add("SCINTILLATIONCOMPONENT2", lxe_energy, lxe_scint)
-        .add("ABSLENGTH"              , lxe_energy, lxe_abslength)
-        .add("SCINTILLATIONTIMECONSTANT1",    20 * ns )
-        .add("SCINTILLATIONTIMECONSTANT2",    45 * ns )
-        .add("SCINTILLATIONYIELD"        , 12000 / MeV)
-        .add("SCINTILLATIONYIELD1"       ,     1.0    )
-        .add("SCINTILLATIONYIELD2"       ,     0.0    )
-        .add("RESOLUTIONSCALE"           ,     1.0    )
-        .done();
-    LXe -> SetMaterialPropertiesTable(LXe_properties);
-
     auto csi = n4::material("G4_CESIUM_IODIDE");
 
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
@@ -58,14 +38,23 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
     vec_double csi_rindex =                     {1.79  , 1.79  , 1.79 , 1.79 };   //vec_double csi_rindex = {2.2094, 1.7611};
     vec_double  csi_scint =                     {0.0   , 1.0   , 0.1  , 0.0  };
     auto    csi_abslength = n4::scale_by(m    , {5     , 5     , 5    , 5    });
+    // Values from "Temperature dependence of pure CsI: scintillation light yield and decay time" by Amsler et al
+    // "cold" refers to ~77K, i.e. liquid nitrogen temperature
+    G4double csi_scint_yield      =  3200 / MeV;
+    G4double csi_scint_yield_cold = 50000 / MeV;
+    G4double csi_time_fast        =     6 * ns;
+    G4double csi_time_slow        =    28 * ns;
+    G4double csi_time_fast_cold   =  1015 * ns; // only one component at cold temps!
+    G4double csi_time_slow_cold   =  1015 * ns;
     G4MaterialPropertiesTable *csi_mpt = n4::material_properties()
         .add("RINDEX"                 , csi_energy, csi_rindex)
         .add("SCINTILLATIONCOMPONENT1", csi_energy,  csi_scint)
         .add("SCINTILLATIONCOMPONENT2", csi_energy,  csi_scint)
         .add("ABSLENGTH"              , csi_energy, csi_abslength)
-        .add("SCINTILLATIONTIMECONSTANT1",   700 * ns )
-        .add("SCINTILLATIONTIMECONSTANT2",  3500 * ns )
-        .add("SCINTILLATIONYIELD"        , 65000 / MeV)
+        .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
+        .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
+      //.add("SCINTILLATIONYIELD"        , csi_scint_yield / MeV)
+        .add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
         .add("SCINTILLATIONYIELD1"       ,     0.57   )
         .add("SCINTILLATIONYIELD2"       ,     0.43   )
         .add("RESOLUTIONSCALE"           ,     1.0    )
@@ -91,7 +80,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
 
     G4double scint_xy = 3*mm, scint_z = 2*cm;
     G4double world_size = 10*cm;
-    G4double coating_thck = 0.5*mm;
+    G4double coating_thck = 0.25*mm;
     // auto cylinder = n4::tubs("Cylinder").r(10*cm).z(1*cm).volume(copper);
     auto coating_interior = n4::box("CoatingInterior").cube(scint_xy                 ).z(scint_z                );
     auto coating_logical  = n4::box("CoatingExterior").cube(scint_xy + coating_thck*2).z(scint_z  + coating_thck)
