@@ -55,6 +55,7 @@ G4PVPlacement* make_geometry() {
     G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
         .add("RINDEX", energy, rindex_csi)
         .add("SCINTILLATIONYIELD", 65000. / MeV)
+        // .add("SCINTILLATIONYIELD", 100. / MeV) // for testing
         .add("SCINTILLATIONTIMECONSTANT1", 700. * ns)
         .add("SCINTILLATIONTIMECONSTANT2", 3500. * ns)
         .add("RESOLUTIONSCALE", 1.0)
@@ -83,31 +84,39 @@ G4PVPlacement* make_geometry() {
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
+    auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
+
     G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
-    G4double half_world_size = 50*mm;
-    G4double coating_thck = 0.5*mm;
     auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
 
+    G4double coating_thck = 0.5*mm;
     G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
     G4VSolid* coating_int = new G4Box("CoatingInterior", half_scint_x, half_scint_y, half_scint_z);
     G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
     G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
-    auto rot180 = new G4RotationMatrix();
-    rot180 -> rotateY(180*deg);
+    auto rotY180 = new G4RotationMatrix();
+    rotY180 -> rotateY(180*deg);
 
     G4int nb_detectors_per_side = 3;
     G4double half_detector_width = half_scint_x / nb_detectors_per_side; // assumes the detectors are square
     G4double half_detector_depth = half_detector_width; // this will make the detectors cubes
     auto detector = n4::volume<G4Box>("Detector", air, half_detector_width, half_detector_width, half_detector_depth); // material doesn't matter
 
+    G4double half_world_size = 50*mm;
     auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
 
-    auto scintillator_offset = 22.5*mm;
+    G4double source_ring_rmax = 12.5*mm; G4double source_ring_rmin = 9.5*mm; G4double source_ring_thck = 3*mm;
+    auto source_ring = n4::volume<G4Tubs>("SourceRing", plastic, source_ring_rmin, source_ring_rmax, source_ring_thck, 0*deg, 360*deg);
+    auto rotY90 = new G4RotationMatrix();
+    rotY90 -> rotateY(90*deg);
+
+    auto scintillator_offset = 23*mm;
 
     n4::place(scintillator).in(world).at({0, 0,  scintillator_offset}).copy_no(0).now();
     n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
-    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world).rotate(*rotY180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
     n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
+    n4::place(source_ring).in(world).rotate(*rotY90).at({0, 0, 0}).now();
 
     for (G4int side=0; side<2; side++) {
         for (G4int i=0; i<nb_detectors_per_side; i++) {
@@ -131,6 +140,8 @@ G4PVPlacement* make_geometry() {
         track -> SetTrackStatus(fStopAndKill);
 
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
+        G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
+        G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
         if (copy_nb < pow(nb_detectors_per_side, 2)) {
             photon_count_0 += 1;
         }
@@ -146,17 +157,17 @@ G4PVPlacement* make_geometry() {
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
 
-    // TO BE CHANGED!!!!!!
-    G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
+    G4OpticalSurface* surface = new G4OpticalSurface("OpticalSurface");
 
-    OpSurface->SetType(dielectric_dielectric);
-    OpSurface->SetModel(unified);
-    OpSurface->SetFinish(groundbackpainted);
-    OpSurface->SetSigmaAlpha(0.1);
+    surface->SetType(dielectric_dielectric);
+    surface->SetModel(unified);
+    surface->SetFinish(groundbackpainted);
+    surface->SetSigmaAlpha(0.1);
 
     // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(0), world->GetDaughter(2), OpSurface);
+    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(0), world->GetDaughter(2), surface);
+    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(1), world->GetDaughter(3), surface);
 
     std::vector<G4double> pp = {2.038*eV, 4.144*eV};
     std::vector<G4double> specularlobe = {0.3, 0.3};
@@ -166,16 +177,16 @@ G4PVPlacement* make_geometry() {
     std::vector<G4double> reflectivity = {1.0, 1.0};
     std::vector<G4double> efficiency = {0.8, 0.1};
 
-    G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
+    G4MaterialPropertiesTable* surface_mpt = new G4MaterialPropertiesTable();
 
-    SMPT->AddProperty("RINDEX", pp, rindex);
-    SMPT->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
-    SMPT->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
-    SMPT->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
-    SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
-    SMPT->AddProperty("EFFICIENCY", pp, efficiency);
+    surface_mpt->AddProperty("RINDEX", pp, rindex);
+    surface_mpt->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
+    surface_mpt->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
+    surface_mpt->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
+    surface_mpt->AddProperty("REFLECTIVITY", pp, reflectivity);
+    surface_mpt->AddProperty("EFFICIENCY", pp, efficiency);
 
-    OpSurface->SetMaterialPropertiesTable(SMPT);
+    surface->SetMaterialPropertiesTable(surface_mpt);
 
     return n4::place(world).now();
 }
