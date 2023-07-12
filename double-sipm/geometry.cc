@@ -88,6 +88,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
+    auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
+
     G4double scint_xy = 3*mm, scint_z = 2*cm;
     G4double world_size = 10*cm;
     G4double coating_thck = 0.5*mm;
@@ -99,7 +101,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         .name("Coating")
         .volume(teflon);
 
-    auto rot180 = new G4RotationMatrix(); rot180 -> rotateY(180*deg);
+    auto rotY180 = new G4RotationMatrix(); rotY180 -> rotateY(180*deg);
 
     G4int nb_detectors_per_side = 3;
     G4double half_detector_width = scint_xy / 2 / nb_detectors_per_side; // assumes the detectors are square
@@ -108,12 +110,19 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
 
     auto world = n4::box{"World"}.cube(world_size).volume(air);
 
-    auto scintillator_offset = 22.5*mm;
+    auto scintillator_offset = 23*mm;
     auto scintillator = coating_interior.name("Scintillator").volume(csi);
-    n4::place(scintillator)   .in(world)                .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
-    n4::place(scintillator)   .in(world)                .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
-    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
-    n4::place(coating_logical).in(world)                .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+    n4::place(scintillator)   .in(world)                 .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
+    n4::place(scintillator)   .in(world)                 .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
+    n4::place(coating_logical).in(world).rotate(*rotY180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world)                 .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+
+    G4double source_ring_rmax = 12.5*mm; G4double source_ring_rmin = 9.5*mm; G4double source_ring_thck = 3*mm;
+    auto source_ring = n4::volume<G4Tubs>("SourceRing", plastic, source_ring_rmin, source_ring_rmax, source_ring_thck, 0*deg, 360*deg);
+    auto rotY90 = new G4RotationMatrix();
+    rotY90 -> rotateY(90*deg);
+
+    n4::place(source_ring).in(world).rotate(*rotY90).at({0, 0, 0}).now();
 
     for (G4int side=0; side<2; side++) {
         for (G4int i=0; i<nb_detectors_per_side; i++) {
@@ -139,6 +148,9 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
         if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; }
         else                                         { photon_count[1]++; }
+
+        G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
+        G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
         return true;
     };
     auto end_of_event = [](G4HCofThisEvent* what) {};
@@ -148,20 +160,20 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
 
-    // TO BE CHANGED!!!!!!
-    G4OpticalSurface* OpSurface = new G4OpticalSurface("name");
+    G4OpticalSurface* surface = new G4OpticalSurface("OpticalSurface");
 
-    OpSurface->SetType(dielectric_dielectric);
-    OpSurface->SetModel(unified);
-    OpSurface->SetFinish(groundbackpainted);
-    OpSurface->SetSigmaAlpha(0.1);
+    surface->SetType(dielectric_dielectric);
+    surface->SetModel(unified);
+    surface->SetFinish(groundbackpainted);
+    surface->SetSigmaAlpha(0.1);
 
     // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* Surface = new G4LogicalBorderSurface("name", world->GetDaughter(0), world->GetDaughter(2), OpSurface);
+    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(0), world->GetDaughter(2), surface);
+    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(1), world->GetDaughter(3), surface);
 
     vec_double pp = {2.038*eV, 4.144*eV};
-    OpSurface -> SetMaterialPropertiesTable(
+    surface -> SetMaterialPropertiesTable(
         n4::material_properties{}
            .add("RINDEX"                , pp, {0.3 , 0.3 })
            .add("SPECULARLOBECONSTANT"  , pp, {0.2 , 0.2 })
