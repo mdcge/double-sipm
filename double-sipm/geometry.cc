@@ -41,8 +41,8 @@ G4PVPlacement* make_geometry() {
     G4double csi_time_slow_cold = 1015 * ns;
     G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
         .add("RINDEX", energy, rindex_csi)
-        // .add("SCINTILLATIONYIELD", csi_scint_yield)
-        .add("SCINTILLATIONYIELD", 100. / MeV) // for testing
+        .add("SCINTILLATIONYIELD", csi_scint_yield)
+        // .add("SCINTILLATIONYIELD", 100. / MeV) // for testing
         .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
         .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
         .add("RESOLUTIONSCALE", 1.0)
@@ -141,38 +141,30 @@ G4PVPlacement* make_geometry() {
     auto sens_detector = new n4::sensitive_detector("Detector", process_hits, end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
 
+    // Border surface ------------------------------------------
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
 
     G4OpticalSurface* surface = new G4OpticalSurface("OpticalSurface");
 
+    // Values from same paper as above ("Optimization of Parameters...")
+    // "groundfrontpainted" (I think) only considers whether the photon is reflected or absorbed, so there will be no shine through visible in the simulation
     surface->SetType(dielectric_dielectric);
     surface->SetModel(unified);
-    surface->SetFinish(groundbackpainted);
-    surface->SetSigmaAlpha(0.1);
+    surface->SetFinish(groundfrontpainted);
+    surface->SetSigmaAlpha(0.0);
 
     // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
     G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(0), world->GetDaughter(2), surface);
     G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(1), world->GetDaughter(3), surface);
 
-    std::vector<G4double> pp = {2.038*eV, 4.144*eV};
-    std::vector<G4double> specularlobe = {0.3, 0.3};
-    std::vector<G4double> specularspike = {0.2, 0.2};
-    std::vector<G4double> backscatter = {0.1, 0.1};
-    std::vector<G4double> rindex = {1.35, 1.40};
-    std::vector<G4double> reflectivity = {1.0, 1.0};
-    std::vector<G4double> efficiency = {0.8, 0.1};
+    std::vector<G4double> reflectivity = {0.98, 0.98, 0.98, 0.98};
 
-    G4MaterialPropertiesTable* surface_mpt = new G4MaterialPropertiesTable();
-
-    surface_mpt->AddProperty("RINDEX", pp, rindex);
-    surface_mpt->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
-    surface_mpt->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
-    surface_mpt->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
-    surface_mpt->AddProperty("REFLECTIVITY", pp, reflectivity);
-    surface_mpt->AddProperty("EFFICIENCY", pp, efficiency);
-
+    // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
+    G4MaterialPropertiesTable* surface_mpt = n4::material_properties()
+        .add("REFLECTIVITY", energy, reflectivity)
+        .done();
     surface->SetMaterialPropertiesTable(surface_mpt);
 
     return n4::place(world).now();
