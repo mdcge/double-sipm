@@ -134,7 +134,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         else                                         { photon_count[1]++; }
 
         G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
-        G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
+        // G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
         return true;
     };
     auto end_of_event = [](G4HCofThisEvent* what) {};

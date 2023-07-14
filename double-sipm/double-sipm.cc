@@ -69,11 +69,12 @@ int main(int argc, char *argv[]) {
         photon_count[0] = photon_count[1] = 0;
     };
     // At the end of each event: record total energy deposited
-    auto write_photon_count = [&data_file, &total_edep, &photon_count] (G4Event const*) {
-        G4cout << "\nTotal deposited energy in scintillator 0: "  << total_edep[0]
-               << "\nTotal deposited energy in scintillator 1: " << total_edep[1]
-               << "\n\nPhoton count 0: " << photon_count[0]
-               <<   "\nPhoton count 1: " << photon_count[1] << G4endl;
+    auto write_photon_count = [&data_file, &total_edep, &photon_count] (G4Event const* event) {
+        G4cout << "Event number: " << event -> GetEventID()
+               << "\n\nTotal deposited energy in scintillator 0: " << total_edep[0]
+               <<   "\nTotal deposited energy in scintillator 1: " << total_edep[1]
+               << "\nPhoton count 0: " << photon_count[0]
+               << "\nPhoton count 1: " << photon_count[1] << G4endl << G4endl;
         data_file << photon_count[0] << "," << photon_count[1] << std::endl;
     };
 
@@ -104,7 +105,13 @@ int main(int argc, char *argv[]) {
             //        -> classify(kill_secondaries));});
 
     // Run the simulation
-    // + No CLI arguments: open GUI
-    // + 1 CLI argument (`macs/<something>.mac`): run in batch mode, with the specified macro
+
+    // + No CLI arguments: open GUI (using the settings in macs/vis.mac)
+
+    // + 1 CLI argument (a macro file such as `macs/run.mac`): run in
+    //     batch mode, with the specified macro
+
+    // Batch mode will run the simulation much more quickly, because it will not
+    // spend resources on drawing trajectories.
     n4::ui(argc, argv);
 }
