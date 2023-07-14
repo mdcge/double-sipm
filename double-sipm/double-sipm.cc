@@ -51,10 +51,11 @@ int main(int argc, char *argv[]) {
         photon_count_1 = 0;
     };
     auto write_photon_count = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
+        G4cout << "Event number: " << event -> GetEventID() << G4endl;
         G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
-        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
         G4cout << "Photon count 0: " << photon_count_0 << G4endl;
-        G4cout << "Photon count 1: " << photon_count_1 << G4endl;
+        G4cout << "Photon count 1: " << photon_count_1 << G4endl << G4endl;
 
         data_file << photon_count_0 << "," << photon_count_1 << std::endl;
     };
@@ -116,6 +117,8 @@ int main(int argc, char *argv[]) {
     } else {
         // interactive mode
         UImanager->ApplyCommand("/control/execute init_vis.mac");
+        // Use "/vis/disable" to speed up the simulation with loads of events, as the trajectories accumulate and slow down the program
+        //UImanager->ApplyCommand("/vis/disable");
         ui->SessionStart();
     }
 

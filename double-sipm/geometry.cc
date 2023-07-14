@@ -128,7 +128,7 @@ G4PVPlacement* make_geometry() {
 
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
         G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
-        G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
+        // G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
         if (copy_nb < pow(nb_detectors_per_side, 2)) {
             photon_count_0 += 1;
         }
