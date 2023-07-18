@@ -138,9 +138,9 @@ G4PVPlacement* make_geometry() {
         G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
         G4double photon_energy = photon_momentum.mag();
 
-        // Taken from Broadcom's "SiPM Characteristics for PMT Users"
-        std::vector<G4double> sipm_energies = {1.239841939*eV/0.9, 1.239841939*eV/0.42, 1.239841939*eV/0.3};
-        std::vector<G4double> sipm_pdes = {0.06, 0.63, 0.4};
+        // Pixel pitch 25 um
+        std::vector<G4double> sipm_energies = {1.239841939*eV/0.9, 1.239841939*eV/0.7, 1.239841939*eV/0.5, 1.239841939*eV/0.46, 1.239841939*eV/0.4, 1.239841939*eV/0.32};
+        std::vector<G4double> sipm_pdes = {0.03, 0.1, 0.245, 0.255, 0.23, 0.02};
         if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
             if (copy_nb < pow(nb_detectors_per_side, 2)) {
                 photon_count_0 += 1;
