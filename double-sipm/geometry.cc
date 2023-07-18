@@ -21,13 +21,14 @@
 #include <G4RandomDirection.hh>
 #include <G4ThreeVector.hh>
 #include <G4Tubs.hh>
-#include <G4Types.hh>
+#include <Randomize.hh>
 
 using vec_double = std::vector<G4double>;
 using vec_int    = std::vector<G4int>;
 
 const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
+G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation);
 
 G4PVPlacement* make_geometry(vec_int& photon_count) {
     auto csi = n4::material("G4_CESIUM_IODIDE");
@@ -53,8 +54,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         .add("ABSLENGTH"              , csi_energies, csi_abslength)
         .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
         .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
-      //.add("SCINTILLATIONYIELD"        , csi_scint_yield)
-        .add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
+        .add("SCINTILLATIONYIELD"        , csi_scint_yield)
+      //.add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
         .add("SCINTILLATIONYIELD1"       ,     0.57   )
         .add("SCINTILLATIONYIELD2"       ,     0.43   )
         .add("RESOLUTIONSCALE"           ,     1.0    )
@@ -131,15 +132,22 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         track -> SetTrackStatus(fStopAndKill);
 
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
-        if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; }
-        else                                         { photon_count[1]++; }
-
         G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
         G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
         G4double photon_energy = photon_momentum.mag();
-        G4cout << "XXXXXXXXXXXXXXXXXXXX " << hc*eV/photon_energy << G4endl;
+
+        // Taken from Broadcom's "SiPM Characteristics for PMT Users"
+        auto sipm_energies = n4::scale_by(hc*eV, {1/0.9 , 1/0.42, 1/0.3});
+        std::vector<G4double> sipm_pdes =        {  0.06,   0.63,   0.4};
+
+        if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
+            if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; }
+            else                                         { photon_count[1]++; }
+        }
+
         return true;
     };
+
     auto end_of_event = [](G4HCofThisEvent* what) {};
     auto sens_detector = (new n4::sensitive_detector{"Detector", process_hits}) -> end_of_event(end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
@@ -171,4 +179,21 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
     );
 
     return n4::place(world).now();
+}
+
+// TODO: refactor detection_probability (vectors passed by value, etc.)
+G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation) {
+    G4int index;
+    G4int length = (G4int) energies.size() - 1;
+    if (energy < energies[0] || energies[length] < energy) {
+        return 0;
+    }
+    for (G4int i=0; i<length; i++) {
+        if (energies[i] <= energy && energy <= energies[i+1]) {
+            index = i;
+        }
+    }
+    G4double y0 = scintillation[index]; G4double y1 = scintillation[index+1];
+    G4double x0 = energies[index]; G4double x1 = energies[index+1];
+    return y0 + ((y1 - y0) / (x1 - x0)) * (energy - x0);
 }
