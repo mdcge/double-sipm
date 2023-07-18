@@ -151,27 +151,27 @@ G4PVPlacement* make_geometry() {
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
 
-    G4OpticalSurface* surface = new G4OpticalSurface("OpticalSurface");
+    G4OpticalSurface* csi_teflon_surface = new G4OpticalSurface("CsI-TeflonSurface");
 
     // Values from same paper as above ("Optimization of Parameters...")
     // "groundfrontpainted" (I think) only considers whether the photon is reflected or absorbed, so there will be no shine through visible in the simulation
-    surface->SetType(dielectric_dielectric);
-    surface->SetModel(unified);
-    surface->SetFinish(groundfrontpainted);
-    surface->SetSigmaAlpha(0.0);
+    csi_teflon_surface->SetType(dielectric_dielectric);
+    csi_teflon_surface->SetModel(unified);
+    csi_teflon_surface->SetFinish(groundfrontpainted);
+    csi_teflon_surface->SetSigmaAlpha(0.0);
 
     // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(0), world->GetDaughter(2), surface);
-    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("OpticalSurface", world->GetDaughter(1), world->GetDaughter(3), surface);
+    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("CsI-TeflonSurface", world->GetDaughter(0), world->GetDaughter(2), csi_teflon_surface);
+    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("CsI-TeflonSurface", world->GetDaughter(1), world->GetDaughter(3), csi_teflon_surface);
 
     std::vector<G4double> reflectivity = {0.98, 0.98, 0.98, 0.98};
 
     // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
-    G4MaterialPropertiesTable* surface_mpt = n4::material_properties()
-        .add("REFLECTIVITY", energy, reflectivity)
+    G4MaterialPropertiesTable* csi_teflon_surface_mpt = n4::material_properties()
+        .add("REFLECTIVITY", energies, reflectivity)
         .done();
-    surface->SetMaterialPropertiesTable(surface_mpt);
+    csi_teflon_surface -> SetMaterialPropertiesTable(csi_teflon_surface_mpt);
 
     return n4::place(world).now();
 }
