@@ -44,7 +44,7 @@ int main(int argc, char *argv[]) {
     auto close_file = [&data_file] (G4Run const* run) { data_file.close(); };
 
     // Event actions
-    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
+    auto reset_photon_count = [&total_edep_0, &total_edep_1] (G4Event const* event) {
         total_edep_0 = 0;
         total_edep_1 = 0;
         photon_count_0 = 0;
@@ -91,7 +91,7 @@ int main(int argc, char *argv[]) {
                                                 -> begin(open_file)
                                                 -> end(close_file))
                                          -> set((new n4::event_action())
-                                                -> begin(reset_total_edep)
+                                                -> begin(reset_photon_count)
                                                 -> end(write_photon_count))
                                          -> set((new n4::stepping_action{accumulate_energy})));
                                          // -> set((new n4::stacking_action())

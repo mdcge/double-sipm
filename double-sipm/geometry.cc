@@ -25,12 +25,14 @@ G4int photon_count_0 = 0;
 G4int photon_count_1 = 0;
 
 G4PVPlacement* make_geometry() {
-    std::vector<G4double> energy = {1.239841939*eV/0.35, 1.239841939*eV/0.54, 1.239841939*eV/0.7, 1.239841939*eV/0.9}; // denominator is wavelength in micrometres
+
+    // must be in increasing ENERGY order (decreasing wavelength) for scintillation to work properly
+    std::vector<G4double> energies = {1.239841939*eV/0.9, 1.239841939*eV/0.7, 1.239841939*eV/0.54, 1.239841939*eV/0.35}; // denominator is wavelength in micrometres
 
     auto csi = n4::material("G4_CESIUM_IODIDE");
     //std::vector<G4double> rindex_csi = {2.2094, 1.7611};
     std::vector<G4double> rindex_csi = {1.79, 1.79, 1.79, 1.79}; // values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
-    std::vector<G4double> scint_csi = {0.0, 1.0, 0.1, 0.0}; // Fig. 2 in the paper
+    std::vector<G4double> scint_csi = {0.0, 0.1, 1.0, 0.0}; // Fig. 2 in the paper
     // Values from "Temperature dependence of pure CsI: scintillation light yield and decay time" by Amsler et al
     // "cold" refers to ~77K, i.e. liquid nitrogen temperature
     G4double csi_scint_yield = 3200. / MeV;
@@ -40,17 +42,17 @@ G4PVPlacement* make_geometry() {
     G4double csi_time_fast_cold = 1015 * ns; // only one component at cold temps!
     G4double csi_time_slow_cold = 1015 * ns;
     G4MaterialPropertiesTable *mpt_csi = n4::material_properties()
-        .add("RINDEX", energy, rindex_csi)
-        .add("SCINTILLATIONYIELD", csi_scint_yield)
-        // .add("SCINTILLATIONYIELD", 100. / MeV) // for testing
+        .add("RINDEX", energies, rindex_csi)
+        //.add("SCINTILLATIONYIELD", csi_scint_yield)
+        .add("SCINTILLATIONYIELD", 100. / MeV) // for testing
         .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
         .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
         .add("RESOLUTIONSCALE", 1.0)
         .add("SCINTILLATIONYIELD1", 0.57)
         .add("SCINTILLATIONYIELD2", 0.43)
-        .add("SCINTILLATIONCOMPONENT1", energy, scint_csi)
-        .add("SCINTILLATIONCOMPONENT2", energy, scint_csi)
-        .add("ABSLENGTH", energy, {5.*m, 5.*m, 5.*m, 5.*m})
+        .add("SCINTILLATIONCOMPONENT1", energies, scint_csi)
+        .add("SCINTILLATIONCOMPONENT2", energies, scint_csi)
+        .add("ABSLENGTH", energies, {5.*m, 5.*m, 5.*m, 5.*m})
         .done();
     csi -> GetIonisation() -> SetBirksConstant(0.00152 * mm/MeV);
     csi -> SetMaterialPropertiesTable(mpt_csi);
@@ -58,7 +60,7 @@ G4PVPlacement* make_geometry() {
     auto air = n4::material("G4_AIR");
     std::vector<G4double> rindex_air = {1.0, 1.0, 1.0, 1.0};
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
-        .add("RINDEX", energy, rindex_air)
+        .add("RINDEX", energies, rindex_air)
         .done();
     air -> SetMaterialPropertiesTable(mpt_air);
 
@@ -67,7 +69,7 @@ G4PVPlacement* make_geometry() {
     // but are also stated in the same paper as above
     std::vector<G4double> rindex_teflon = {1.35, 1.35, 1.35, 1.35};
     G4MaterialPropertiesTable *mpt_teflon = n4::material_properties()
-        .add("RINDEX", energy, rindex_teflon)
+        .add("RINDEX", energies, rindex_teflon)
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
@@ -122,13 +124,17 @@ G4PVPlacement* make_geometry() {
         }
     }
 
+    // Detector physics -------------------------------------
+
     auto process_hits = [nb_detectors_per_side](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
         G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
-        // G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
+        G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
+        G4double photon_energy = photon_momentum.mag();
+        G4cout << "XXXXXXXXXXXXXXXXXXXX " << 1.239841939*eV/photon_energy << G4endl;
         if (copy_nb < pow(nb_detectors_per_side, 2)) {
             photon_count_0 += 1;
         }
