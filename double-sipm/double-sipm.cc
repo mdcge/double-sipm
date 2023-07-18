@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     std::vector<G4double> total_edep{0, 0};
     std::vector<G4int>  photon_count{0, 0};
     // At the start of each event: reset the accumulators to zero
-    auto reset_total_edep = [&total_edep, &photon_count] (G4Event const*) {
+    auto reset_photon_count = [&total_edep, &photon_count] (G4Event const*) {
         total_edep  [0] = total_edep  [1] = 0;
         photon_count[0] = photon_count[1] = 0;
     };
@@ -98,7 +98,7 @@ int main(int argc, char *argv[]) {
                    -> begin(open_file)
                    -> end (close_file))
             -> set((new n4::event_action())
-                   -> begin(reset_total_edep)
+                   -> begin(reset_photon_count)
                    -> end(write_photon_count))
             -> set((new n4::stepping_action{accumulate_energy}));});
             // -> set((new n4::stacking_action())

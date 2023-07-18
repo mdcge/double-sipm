@@ -26,18 +26,18 @@
 using vec_double = std::vector<G4double>;
 using vec_int    = std::vector<G4int>;
 
+const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
 G4PVPlacement* make_geometry(vec_int& photon_count) {
     auto csi = n4::material("G4_CESIUM_IODIDE");
-
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
     //  csi_scint: Fig. 2 in the paper
-    auto hc = CLHEP::h_Planck * CLHEP::c_light;
-    auto csi_energy       = n4::scale_by(hc*eV, {1/0.35, 1/0.54, 1/0.7, 1/0.9}) ; // denominator is wavelength in micrometres
-    vec_double csi_rindex =                     {1.79  , 1.79  , 1.79 , 1.79 };   //vec_double csi_rindex = {2.2094, 1.7611};
-    vec_double  csi_scint =                     {0.0   , 1.0   , 0.1  , 0.0  };
-    auto    csi_abslength = n4::scale_by(m    , {5     , 5     , 5    , 5    });
+    // must be in increasing ENERGY order (decreasing wavelength) for scintillation to work properly
+    auto     csi_energies = n4::scale_by(hc*eV, {1/0.9, 1/0.7, 1/0.54, 1/0.35}); // denominator is wavelength in micrometres
+    vec_double csi_rindex =                     {1.79 , 1.79 , 1.79  , 1.79  };  //vec_double csi_rindex = {2.2094, 1.7611};
+    vec_double  csi_scint =                     {0.0  , 0.1  , 1.0   , 0.0   };
+    auto    csi_abslength = n4::scale_by(m    , {5    , 5    , 5     , 5     });
     // Values from "Temperature dependence of pure CsI: scintillation light yield and decay time" by Amsler et al
     // "cold" refers to ~77K, i.e. liquid nitrogen temperature
     G4double csi_scint_yield      =  3200 / MeV;
@@ -47,14 +47,14 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
     G4double csi_time_fast_cold   =  1015 * ns; // only one component at cold temps!
     G4double csi_time_slow_cold   =  1015 * ns;
     G4MaterialPropertiesTable *csi_mpt = n4::material_properties()
-        .add("RINDEX"                 , csi_energy, csi_rindex)
-        .add("SCINTILLATIONCOMPONENT1", csi_energy,  csi_scint)
-        .add("SCINTILLATIONCOMPONENT2", csi_energy,  csi_scint)
-        .add("ABSLENGTH"              , csi_energy, csi_abslength)
+        .add("RINDEX"                 , csi_energies, csi_rindex)
+        .add("SCINTILLATIONCOMPONENT1", csi_energies,  csi_scint)
+        .add("SCINTILLATIONCOMPONENT2", csi_energies,  csi_scint)
+        .add("ABSLENGTH"              , csi_energies, csi_abslength)
         .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
         .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
-        .add("SCINTILLATIONYIELD"        , csi_scint_yield)
-      //.add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
+      //.add("SCINTILLATIONYIELD"        , csi_scint_yield)
+        .add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
         .add("SCINTILLATIONYIELD1"       ,     0.57   )
         .add("SCINTILLATIONYIELD2"       ,     0.43   )
         .add("RESOLUTIONSCALE"           ,     1.0    )
@@ -125,6 +125,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         }
     }
 
+    // Detector physics -------------------------------------
     auto process_hits = [nb_detectors_per_side, &photon_count](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
@@ -134,7 +135,9 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         else                                         { photon_count[1]++; }
 
         G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
-        // G4cout << "XXXXXXXXXXXXXXXXXXXX " << time << G4endl;
+        G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
+        G4double photon_energy = photon_momentum.mag();
+        G4cout << "XXXXXXXXXXXXXXXXXXXX " << hc*eV/photon_energy << G4endl;
         return true;
     };
     auto end_of_event = [](G4HCofThisEvent* what) {};
