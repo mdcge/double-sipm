@@ -1,4 +1,3 @@
-#include "n4_run_manager.hh"
 #include "nain4.hh"
 #include "n4_ui.hh"
 #include "g4-mandatory.hh"
@@ -56,9 +55,13 @@ int main(int argc, char *argv[]) {
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
     // Open output file at start of run, close it at the end of the run
-    std::ofstream data_file;
-    auto  open_file = [&data_file] (G4Run const*) { data_file.open("G4_data_test.csv"); };
-    auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
+    std::ofstream data_file_0;
+    std::ofstream data_file_1;
+    auto  open_file = [&data_file_0, &data_file_1] (G4Run const*) {
+        data_file_0.open("G4_photon_times_0.csv");
+        data_file_1.open("G4_photon_times_1.csv");
+    };
+    auto close_file = [&data_file_0, &data_file_1] (G4Run const*) { data_file_0.close(); data_file_1.close(); };
 
     // Accumulators for energy and photons observed in each scintillator during a single event
     std::vector<G4double> total_edep{0, 0};
@@ -73,7 +76,7 @@ int main(int argc, char *argv[]) {
     };
 
     G4int double_hits = 0;
-    auto write_photon_count = [&data_file, &double_hits, &total_edep, &photon_count, &times_of_arrival] (G4Event const* event) {
+    auto write_photon_count = [&data_file_0, &data_file_1, &double_hits, &total_edep, &photon_count, &times_of_arrival] (G4Event const* event) {
         //G4cout << "Event number: " << event -> GetEventID() << G4endl;
         // G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
         // G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
@@ -88,9 +91,15 @@ int main(int argc, char *argv[]) {
         // }
         if (times_of_arrival[0].size() != 0) {
             for (G4int i=0; i<times_of_arrival[0].size(); i++) {
-                data_file << times_of_arrival[0][i] << ",";
+                data_file_0 << times_of_arrival[0][i] << ",";
             }
-            data_file << std::endl;
+            data_file_0 << std::endl;
+        }
+        if (times_of_arrival[1].size() != 0) {
+            for (G4int i=0; i<times_of_arrival[1].size(); i++) {
+                data_file_1 << times_of_arrival[1][i] << ",";
+            }
+            data_file_1 << std::endl;
         }
     };
 
