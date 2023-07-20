@@ -28,9 +28,10 @@ using vec_int    = std::vector<G4int>;
 
 const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
+
 G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation);
 
-G4PVPlacement* make_geometry(vec_int& photon_count) {
+G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
     auto csi = n4::material("G4_CESIUM_IODIDE");
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
     //  csi_scint: Fig. 2 in the paper
@@ -127,7 +128,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
     }
 
     // Detector physics -------------------------------------
-    auto process_hits = [nb_detectors_per_side, &photon_count](G4Step* step) {
+    auto process_hits = [nb_detectors_per_side, &photon_count, &times_of_arrival](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
@@ -141,8 +142,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         std::vector<G4double> sipm_pdes =        {  0.03,   0.1,   0.245,   0.255,   0.23,   0.02};
 
         if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
-            if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; }
-            else                                         { photon_count[1]++; }
+            if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; times_of_arrival[0].push_back(time); }
+            else                                         { photon_count[1]++; times_of_arrival[1].push_back(time); }
         }
 
         return true;
