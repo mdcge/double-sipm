@@ -24,6 +24,9 @@
 
 G4int photon_count_0 = 0;
 G4int photon_count_1 = 0;
+std::vector<G4double> times_of_arrival_0;
+std::vector<G4double> times_of_arrival_1;
+
 
 G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation);
 
@@ -143,9 +146,11 @@ G4PVPlacement* make_geometry() {
         std::vector<G4double> sipm_pdes = {0.03, 0.1, 0.245, 0.255, 0.23, 0.02};
         if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
             if (copy_nb < pow(nb_detectors_per_side, 2)) {
+                times_of_arrival_0.push_back(time);
                 photon_count_0 += 1;
             }
             else {
+                times_of_arrival_1.push_back(time);
                 photon_count_1 += 1;
             }
         }

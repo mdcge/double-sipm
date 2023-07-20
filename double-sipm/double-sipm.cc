@@ -18,6 +18,7 @@
 #include <G4Tubs.hh>
 #include <G4Run.hh>
 #include <G4Step.hh>
+#include <G4AnalysisManager.hh>
 
 #include <G4UIExecutive.hh>
 #include <G4UImanager.hh>
@@ -26,6 +27,7 @@
 #include <iostream>
 #include <memory>
 
+
 void add_step_edep(G4double& total_edep_0, G4double& total_edep_1, G4Step const* step);
 
 
@@ -33,6 +35,7 @@ int main(int argc, char *argv[]) {
 
     G4double total_edep_0 = 0;
     G4double total_edep_1 = 0;
+    G4int double_hits = 0;
     std::ofstream data_file;
 
     // User action functions ------------------------
@@ -49,15 +52,28 @@ int main(int argc, char *argv[]) {
         total_edep_1 = 0;
         photon_count_0 = 0;
         photon_count_1 = 0;
+        times_of_arrival_0 = {};
+        times_of_arrival_1 = {};
     };
-    auto write_photon_count = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
-        G4cout << "Event number: " << event -> GetEventID() << G4endl;
-        G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
-        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
+    auto write_photon_count = [&data_file, &double_hits, &total_edep_0, &total_edep_1] (G4Event const* event) {
+        //G4cout << "Event number: " << event -> GetEventID() << G4endl;
+        // G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
+        // G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
         G4cout << "Photon count 0: " << photon_count_0 << G4endl;
         G4cout << "Photon count 1: " << photon_count_1 << G4endl << G4endl;
 
-        data_file << photon_count_0 << "," << photon_count_1 << std::endl;
+        G4cout << "Number of double events: " << double_hits << "/" << event -> GetEventID() << " events" << G4endl;
+        G4cout << "Number of times: " << times_of_arrival_0.size() << " and " << times_of_arrival_1.size() << G4endl;
+        // if (photon_count_0 > 0 && photon_count_1 > 0) {
+        //     data_file << photon_count_0 << "," << photon_count_1 << std::endl;
+        //     double_hits += 1;
+        // }
+        if (times_of_arrival_0.size() != 0) {
+            for (G4int i=0; i<times_of_arrival_0.size(); i++) {
+                data_file << times_of_arrival_0[i] << ",";
+            }
+            data_file << std::endl;
+        }
     };
 
     // Stepping action
