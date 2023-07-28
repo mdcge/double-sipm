@@ -21,6 +21,7 @@
 #include <G4Run.hh>
 #include <G4Step.hh>
 
+#include <G4Types.hh>
 #include <G4UIExecutive.hh>
 #include <G4UImanager.hh>
 #include <G4VisExecutive.hh>
@@ -29,25 +30,23 @@
 #include <memory>
 
 
+G4double delta_total_energy(G4Step const * step) {
+    auto  pre_energy = step ->  GetPreStepPoint() -> GetTotalEnergy();
+    auto post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
+    return pre_energy - post_energy;
+}
+
 // Main part of run action
-void add_step_edep (G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
+void add_step_edep(G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
     G4double step_edep_0 = 0;
     G4double step_edep_1 = 0;
+
     auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
-    if (step_solid_name == "Scintillator-0") {
-        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
-        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-        step_edep_0 = pre_energy - post_energy;
-    }
-    else if (step_solid_name == "Scintillator-1") {
-        G4double pre_energy = step -> GetPreStepPoint() -> GetTotalEnergy();
-        G4double post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-        step_edep_1 = pre_energy - post_energy;
-    }
-    else {
-        step_edep_0 = 0;
-        step_edep_1 = 0;
-    }
+
+    if      (step_solid_name == "Scintillator-0") { step_edep_0 = delta_total_energy(step); }
+    else if (step_solid_name == "Scintillator-1") { step_edep_1 = delta_total_energy(step); }
+    else {                                          step_edep_0 = step_edep_1 = 0;          }
+
     total_edep_0 += step_edep_0;
     total_edep_1 += step_edep_1;
 }
