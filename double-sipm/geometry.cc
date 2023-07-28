@@ -1,6 +1,7 @@
 #include "geometry.hh"
 
 #include "nain4.hh"
+#include "n4-volumes.hh"
 #include "g4-mandatory.hh"
 
 #include <CLHEP/Units/SystemOfUnits.h>
@@ -92,12 +93,17 @@ G4PVPlacement* make_geometry() {
     // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
     auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
 
-    G4VSolid* coating_ext = new G4Box("CoatingExterior", half_scint_x+coating_thck, half_scint_y+coating_thck, half_scint_z+(coating_thck)/2);
-    G4VSolid* coating_int = new G4Box("CoatingInterior", half_scint_x, half_scint_y, half_scint_z);
-    G4VSolid* coating_solid = new G4SubtractionSolid("Coating", coating_ext, coating_int, 0, G4ThreeVector(0, 0, -coating_thck/2));
-    G4LogicalVolume* coating_logical = new G4LogicalVolume(coating_solid, teflon, "Coating", 0, 0, 0);
-    auto rot180 = new G4RotationMatrix();
-    rot180 -> rotateY(180*deg);
+    auto coating_logical = n4::box("CoatingExterior").half_xyz(half_scint_x +  coating_thck,
+                                                               half_scint_y +  coating_thck,
+                                                               half_scint_z + (coating_thck)/2)
+        .subtract(         n4::box("CoatingInterior").half_xyz(half_scint_x,
+                                                               half_scint_y,
+                                                               half_scint_z))
+        .at(0, 0, -coating_thck/2)
+        .name("Coating")
+        .volume(teflon);
+
+    auto rot180 = new G4RotationMatrix(); rot180 -> rotateY(180*deg);
 
     auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
 
