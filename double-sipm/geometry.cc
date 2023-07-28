@@ -102,9 +102,9 @@ G4PVPlacement* make_geometry() {
     auto world = n4::box{"World"}.cube(world_size).volume(air);
 
     // auto cylinder_offset = 1.5*cm;
+    // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
     auto scintillator_offset = 22.5*mm;
     auto scintillator = coating_interior.name("Scintillator").volume(csi);
-    // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
     n4::place(scintillator)   .in(world)                .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
     n4::place(scintillator)   .in(world)                .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
     n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
