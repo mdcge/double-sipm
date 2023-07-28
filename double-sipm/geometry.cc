@@ -28,13 +28,13 @@ const G4double OPTPHOT_MIN_E = 1    * eV;
 const G4double OPTPHOT_MAX_E = 8.21 * eV;
 
 G4PVPlacement* make_geometry() {
-    auto fLXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
+    auto LXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
 
     auto       lxe_energy    = n4::scale_by(eV, { 7.0 ,  7.07,  7.14});
     vec_double lxe_rindex    =                  { 1.59,  1.57,  1.54};
     vec_double lxe_scint     =                  { 0.1 ,  1.0 ,  0.1 };
     auto       lxe_abslength = n4::scale_by(cm, {35   , 35   , 35   });
-    G4MaterialPropertiesTable *fLXe_mt = n4::material_properties()
+    G4MaterialPropertiesTable *LXe_properties = n4::material_properties()
         .add("RINDEX"                 , lxe_energy, lxe_rindex)
         .add("SCINTILLATIONCOMPONENT1", lxe_energy, lxe_scint)
         .add("SCINTILLATIONCOMPONENT2", lxe_energy, lxe_scint)
@@ -46,7 +46,7 @@ G4PVPlacement* make_geometry() {
         .add("SCINTILLATIONYIELD2"       ,     0.0    )
         .add("RESOLUTIONSCALE"           ,     1.0    )
         .done();
-    fLXe -> SetMaterialPropertiesTable(fLXe_mt);
+    LXe -> SetMaterialPropertiesTable(LXe_properties);
 
     auto csi = n4::material("G4_CESIUM_IODIDE");
 
