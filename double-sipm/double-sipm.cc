@@ -78,8 +78,8 @@ int main(int argc, char *argv[]) {
         total_edep_1 = 0;
     };
     auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const*) {
-        G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
-        G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+        G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep_0
+               << "\nTotal deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
 
         data_file << total_edep_0 << "," << total_edep_1 << std::endl;
     };
