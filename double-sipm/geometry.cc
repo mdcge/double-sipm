@@ -128,23 +128,16 @@ G4PVPlacement* make_geometry() {
     OpSurface->SetSigmaAlpha(0.1);
 
     vec_double pp = {2.038*eV, 4.144*eV};
-    vec_double specularlobe = {0.3, 0.3};
-    vec_double specularspike = {0.2, 0.2};
-    vec_double backscatter = {0.1, 0.1};
-    vec_double rindex = {1.35, 1.40};
-    vec_double reflectivity = {0.3, 0.5};
-    vec_double efficiency = {0.8, 0.1};
-
-    G4MaterialPropertiesTable* SMPT = new G4MaterialPropertiesTable();
-
-    SMPT->AddProperty("RINDEX", pp, rindex);
-    SMPT->AddProperty("SPECULARLOBECONSTANT", pp, specularlobe);
-    SMPT->AddProperty("SPECULARSPIKECONSTANT", pp, specularspike);
-    SMPT->AddProperty("BACKSCATTERCONSTANT", pp, backscatter);
-    SMPT->AddProperty("REFLECTIVITY", pp, reflectivity);
-    SMPT->AddProperty("EFFICIENCY", pp, efficiency);
-
-    OpSurface->SetMaterialPropertiesTable(SMPT);
+    OpSurface -> SetMaterialPropertiesTable(
+        n4::material_properties{}
+           .add("RINDEX"                , pp, {0.3 , 0.3 })
+           .add("SPECULARLOBECONSTANT"  , pp, {0.2 , 0.2 })
+           .add("SPECULARSPIKECONSTANT" , pp, {0.1 , 0.1 })
+           .add("BACKSCATTERCONSTANT"   , pp, {1.35, 1.40})
+           .add("REFLECTIVITY"          , pp, {0.3 , 0.5 })
+           .add("EFFICIENCY"            , pp, {0.8 , 0.1 })
+           .done()
+    );
 
     return n4::place(world).now();
 }
