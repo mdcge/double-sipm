@@ -90,13 +90,9 @@ G4PVPlacement* make_geometry() {
     G4double world_size = 10*cm;
     G4double coating_thck = 0.5*mm;
     // auto cylinder = n4::tubs("Cylinder").r(10*cm).z(1*cm).volume(copper);
-    auto scintillator = n4::box("Scintillator").cube(scint_xy).z(scint_z).volume(csi);
-    auto coating_logical = n4::box("CoatingExterior").xyz(scint_xy + coating_thck*2,
-                                                          scint_xy + coating_thck*2,
-                                                          scint_z  + coating_thck)
-        .subtract(         n4::box("CoatingInterior").xyz(scint_xy,
-                                                          scint_xy,
-                                                          scint_z))
+    auto scintillator    = n4::box("Scintillator"   ).cube(scint_xy                 ).z(scint_z                ).volume(csi);
+    auto coating_logical = n4::box("CoatingExterior").cube(scint_xy + coating_thck*2).z(scint_z  + coating_thck)
+        .subtract(         n4::box("CoatingInterior").cube(scint_xy                 ).z(scint_z                ))
         .at(0, 0, -coating_thck/2)
         .name("Coating")
         .volume(teflon);
