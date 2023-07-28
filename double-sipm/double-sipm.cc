@@ -1,3 +1,4 @@
+#include "n4_run_manager.hh"
 #include "nain4.hh"
 #include "g4-mandatory.hh"
 #include "geometry.hh"
@@ -97,23 +98,19 @@ int main(int argc, char *argv[]) {
     physics_list -> ReplacePhysics(new G4EmStandardPhysics_option4());
     physics_list -> RegisterPhysics(new G4OpticalPhysics{});
 
-    auto run_manager = std::unique_ptr<G4RunManager>
-        {G4RunManagerFactory::CreateRunManager(G4RunManagerType::Serial)};
-
-    // Physics list must be attached to run manager before instantiating other user action classes
-    run_manager -> SetUserInitialization(physics_list);
-    run_manager -> SetUserInitialization((new n4::actions{two_gammas})
-                                         -> set((new n4::run_action())
-                                                -> begin(open_file)
-                                                -> end(close_file))
-                                         -> set((new n4::event_action())
-                                                -> begin(reset_total_edep)
-                                                -> end(print_total_edep))
-                                         -> set((new n4::stepping_action{accumulate_energy}))
-                                         -> set((new n4::stacking_action())
-                                                -> classify(kill_secondaries)));
-    run_manager -> SetUserInitialization(new n4::geometry{make_geometry});
-
+    auto run_manager = n4::run_manager::create()
+        .physics(physics_list)
+        .geometry(make_geometry)
+        .actions([&] {return (new n4::actions{two_gammas})
+            -> set((new n4::run_action())
+                   -> begin(open_file)
+                   -> end(close_file))
+            -> set((new n4::event_action())
+                   -> begin(reset_total_edep)
+                   -> end(print_total_edep))
+            -> set((new n4::stepping_action{accumulate_energy}))
+            -> set((new n4::stacking_action())
+                   -> classify(kill_secondaries));});
 
     // Initialize visualization
     std::unique_ptr<G4VisManager> visManager = std::make_unique<G4VisExecutive>();
