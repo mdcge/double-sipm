@@ -91,12 +91,8 @@ int main(int argc, char *argv[]) {
     // Stacking action
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
-        if (parent_ID > 0) {
-            return G4ClassificationOfNewTrack::fKill;
-        }
-        else {
-            return G4ClassificationOfNewTrack::fUrgent;
-        }
+        if (parent_ID > 0) { return G4ClassificationOfNewTrack::fKill;   }
+        else               { return G4ClassificationOfNewTrack::fUrgent; }
     };
 
     // Setting mandatory G4 objects --------------------------
