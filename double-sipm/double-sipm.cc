@@ -43,7 +43,7 @@ G4double delta_total_energy(G4Step const * step) {
     return pre_energy - post_energy;
 }
 
-// Main part of run action
+// Add energies deposited in this step to running totals of deposited energies in whole event
 void add_step_edep(std::vector<G4double>& total_edep, G4Step const* step) {
     auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
     if      (step_solid_name == "Scintillator-0") { total_edep[0] += delta_total_energy(step); }
@@ -52,34 +52,29 @@ void add_step_edep(std::vector<G4double>& total_edep, G4Step const* step) {
 
 int main(int argc, char *argv[]) {
 
-    std::ofstream data_file;
-
-    // User action functions ------------------------
-    // Generator
+    // Each event produces a pair of back-to-back 511 keV gammas
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
-    // Run actions
+    // Open output file at start of run, close it at the end of the run
+    std::ofstream data_file;
     auto  open_file = [&data_file] (G4Run const*) { data_file.open("G4_data_test.csv"); };
     auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
 
-    // Event actions
-    std::vector<G4double> total_edep{0,0};
-    auto reset_total_edep = [&total_edep] (G4Event const*) {
-        total_edep[0] = 0;
-        total_edep[1] = 0;
-    };
+    // Accumulators for energy deposited in each scintillator during a single event
+    std::vector<G4double> total_edep{0, 0};
+    // At the start of each event: reset the energy accumulators to zero
+    auto reset_total_edep = [&total_edep] (G4Event const*) { total_edep[0] = total_edep[1] = 0; };
+    // At the end of each event: record total energy deposited
     auto print_total_edep = [&data_file, &total_edep] (G4Event const*) {
         G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep[0]
                << "\nTotal deposited energy in scintillator 1: " << total_edep[1] << G4endl << G4endl;
-
         data_file << total_edep[0] << "," << total_edep[1] << std::endl;
     };
 
-    // Stepping action
-    // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
+    // At every step: increment running total of deposited energy during the event
     auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
 
-    // Stacking action
+    // Don't simulate secondaries: total energy deposited by gammas is enough for now
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) { return G4ClassificationOfNewTrack::fKill;   }
@@ -93,14 +88,16 @@ int main(int argc, char *argv[]) {
         .actions([&] {return (new n4::actions{two_gammas})
             -> set((new n4::run_action())
                    -> begin(open_file)
-                   -> end(close_file))
+                   -> end (close_file))
             -> set((new n4::event_action())
                    -> begin(reset_total_edep)
-                   -> end(print_total_edep))
+                   -> end  (print_total_edep))
             -> set((new n4::stepping_action{accumulate_energy}))
             -> set((new n4::stacking_action())
                    -> classify(kill_secondaries));});
 
+    // Run the simulation
+    // + No CLI arguments: open GUI
+    // + 1 CLI argument (`macs/<something>.mac`): run in batch mode, with the specified macro
     n4::ui(argc, argv);
-
 }
