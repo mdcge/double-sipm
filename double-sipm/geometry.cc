@@ -88,7 +88,7 @@ G4PVPlacement* make_geometry() {
 
     // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
     G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
-    G4double half_world_size = 50*mm;
+    G4double world_size = 10*cm;
     G4double coating_thck = 0.5*mm;
     // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
     auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
@@ -105,7 +105,7 @@ G4PVPlacement* make_geometry() {
 
     auto rot180 = new G4RotationMatrix(); rot180 -> rotateY(180*deg);
 
-    auto world = n4::volume<G4Box>("World", air, half_world_size, half_world_size, half_world_size);
+    auto world = n4::box{"World"}.cube(world_size).volume(air);
 
     // auto cylinder_offset = 1.5*cm;
     auto scintillator_offset = 22.5*mm;
