@@ -29,6 +29,13 @@
 #include <iostream>
 #include <memory>
 
+auto physics_list() {
+    G4int verbosity;
+    auto physics_list = new FTFP_BERT{verbosity = 0};
+    physics_list ->  ReplacePhysics(new G4EmStandardPhysics_option4());
+    physics_list -> RegisterPhysics(new G4OpticalPhysics{});
+    return physics_list;
+}
 
 G4double delta_total_energy(G4Step const * step) {
     auto  pre_energy = step ->  GetPreStepPoint() -> GetTotalEnergy();
@@ -93,11 +100,6 @@ int main(int argc, char *argv[]) {
     };
 
     // Setting mandatory G4 objects --------------------------
-    G4int verbosity = 0;
-    auto physics_list = new FTFP_BERT{verbosity};
-    physics_list -> ReplacePhysics(new G4EmStandardPhysics_option4());
-    physics_list -> RegisterPhysics(new G4OpticalPhysics{});
-
     auto run_manager = n4::run_manager::create()
         .physics(physics_list)
         .geometry(make_geometry)
