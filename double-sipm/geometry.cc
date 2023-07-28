@@ -110,10 +110,10 @@ G4PVPlacement* make_geometry() {
     // auto cylinder_offset = 1.5*cm;
     auto scintillator_offset = 22.5*mm;
     // n4::place(cylinder).in(world).at({0, 0, cylinder_offset}).now();
-    n4::place(scintillator).in(world).at({0, 0,  scintillator_offset}).copy_no(0).now();
-    n4::place(scintillator).in(world).at({0, 0, -scintillator_offset}).copy_no(1).now();
-    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0, scintillator_offset-(coating_thck/2)}).copy_no(0).now();
-    n4::place(coating_logical).in(world).at({0, 0, -scintillator_offset+(coating_thck/2)}).copy_no(1).now();
+    n4::place(scintillator)   .in(world)                .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
+    n4::place(scintillator)   .in(world)                .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
+    n4::place(coating_logical).in(world).rotate(*rot180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world)                .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
     // Check which world's daughter is which object
     //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
