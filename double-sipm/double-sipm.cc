@@ -45,17 +45,9 @@ G4double delta_total_energy(G4Step const * step) {
 
 // Main part of run action
 void add_step_edep(G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
-    G4double step_edep_0 = 0;
-    G4double step_edep_1 = 0;
-
     auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
-
-    if      (step_solid_name == "Scintillator-0") { step_edep_0 = delta_total_energy(step); }
-    else if (step_solid_name == "Scintillator-1") { step_edep_1 = delta_total_energy(step); }
-    else {                                          step_edep_0 = step_edep_1 = 0;          }
-
-    total_edep_0 += step_edep_0;
-    total_edep_1 += step_edep_1;
+    if      (step_solid_name == "Scintillator-0") { total_edep_0 += delta_total_energy(step); }
+    else if (step_solid_name == "Scintillator-1") { total_edep_1 += delta_total_energy(step); }
 }
 
 int main(int argc, char *argv[]) {
