@@ -86,19 +86,17 @@ G4PVPlacement* make_geometry() {
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
-    // G4double rmin = 0, rmax = 10*cm, half_z = 0.5*cm, min_phi = 0*deg, max_phi = 360*deg;
-    G4double half_scint_x = 1.5*mm, half_scint_y = 1.5*mm, half_scint_z = 10*mm;
+    G4double scint_xy = 3*mm, scint_z = 2*cm;
     G4double world_size = 10*cm;
     G4double coating_thck = 0.5*mm;
-    // auto cylinder = n4::volume<G4Tubs>("Cylinder", copper, rmin, rmax, half_z, min_phi, max_phi);
-    auto scintillator = n4::volume<G4Box>("Scintillator", csi, half_scint_x, half_scint_y, half_scint_z);
-
-    auto coating_logical = n4::box("CoatingExterior").half_xyz(half_scint_x +  coating_thck,
-                                                               half_scint_y +  coating_thck,
-                                                               half_scint_z + (coating_thck)/2)
-        .subtract(         n4::box("CoatingInterior").half_xyz(half_scint_x,
-                                                               half_scint_y,
-                                                               half_scint_z))
+    // auto cylinder = n4::tubs("Cylinder").r(10*cm).z(1*cm).volume(copper);
+    auto scintillator = n4::box("Scintillator").cube(scint_xy).z(scint_z).volume(csi);
+    auto coating_logical = n4::box("CoatingExterior").xyz(scint_xy + coating_thck*2,
+                                                          scint_xy + coating_thck*2,
+                                                          scint_z  + coating_thck)
+        .subtract(         n4::box("CoatingInterior").xyz(scint_xy,
+                                                          scint_xy,
+                                                          scint_z))
         .at(0, 0, -coating_thck/2)
         .name("Coating")
         .volume(teflon);
