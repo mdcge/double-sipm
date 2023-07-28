@@ -62,15 +62,15 @@ int main(int argc, char *argv[]) {
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
     // Run actions
-    auto open_file = [&data_file] (G4Run const* run) { data_file.open("G4_data_test.csv"); };
-    auto close_file = [&data_file] (G4Run const* run) { data_file.close(); };
+    auto  open_file = [&data_file] (G4Run const*) { data_file.open("G4_data_test.csv"); };
+    auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
 
     // Event actions
-    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const* event) {
+    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const*) {
         total_edep_0 = 0;
         total_edep_1 = 0;
     };
-    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const* event) {
+    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const*) {
         G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
         G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
 
