@@ -58,28 +58,6 @@ add_executable(double-sipm double-sipm.cc ${sources} ${headers})
 target_link_libraries(double-sipm ${Geant4_LIBRARIES} Nain4)
 
 #----------------------------------------------------------------------------
-# Copy all scripts to the build directory, i.e. the directory in which we
-# build B1. This is so that we can run the executable directly because it
-# relies on these scripts being in the current working directory.
-#
-set(DOUBLESIPM_SCRIPTS
-  # exampleB1.in
-  # exampleB1.out
-  init_vis.mac
-  # run1.mac
-  # run2.mac
-  vis.mac
-)
-
-foreach(_script ${DOUBLESIPM_SCRIPTS})
-  configure_file(
-    ${PROJECT_SOURCE_DIR}/${_script}
-    ${PROJECT_BINARY_DIR}/${_script}
-    COPYONLY
-  )
-endforeach()
-
-#----------------------------------------------------------------------------
 # For internal Geant4 use - but has no effect if you build this
 # example standalone
 #
@@ -89,3 +67,16 @@ endforeach()
 # Install the executable to 'bin' directory under CMAKE_INSTALL_PREFIX
 #
 install(TARGETS double-sipm DESTINATION bin)
+
+
+#----------------------------------------------------------------------------
+# Link macro files directory to the build directory, i.e. the directory in which
+# we build ${EXE}. This is so that we can run the executable directly
+# because it relies on these macros being in the current working directory.
+#
+add_custom_command(
+  TARGET double-sipm POST_BUILD
+  COMMAND ${CMAKE_COMMAND} -E create_symlink
+  ${CMAKE_SOURCE_DIR}/macs $<TARGET_FILE_DIR:double-sipm>/macs
+  COMMENT "Symlinking G4 macros directory" VERBATIM
+)

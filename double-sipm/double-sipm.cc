@@ -1,5 +1,6 @@
 #include "n4_run_manager.hh"
 #include "nain4.hh"
+#include "n4_ui.hh"
 #include "g4-mandatory.hh"
 #include "geometry.hh"
 #include "generator.hh"
@@ -112,25 +113,6 @@ int main(int argc, char *argv[]) {
             -> set((new n4::stacking_action())
                    -> classify(kill_secondaries));});
 
-    // Initialize visualization
-    std::unique_ptr<G4VisManager> visManager = std::make_unique<G4VisExecutive>();
-    // G4VisExecutive can take a verbosity argument - see /vis/verbose guidance.
-    // G4VisManager* visManager = new G4VisExecutive("Quiet");
-    visManager -> Initialize();
-
-    // Get the pointer to the User Interface manager
-    G4UImanager* UImanager = G4UImanager::GetUIpointer();
-    std::unique_ptr<G4UIExecutive> ui;
-    if ( argc == 1 ) { ui = std::make_unique<G4UIExecutive>(argc, argv); }
-    if ( ! ui ) {
-        // batch mode
-        G4String command = "/control/execute ";
-        G4String fileName = argv[1];
-        UImanager->ApplyCommand(command+fileName);
-    } else {
-        // interactive mode
-        UImanager->ApplyCommand("/control/execute init_vis.mac");
-        ui->SessionStart();
-    }
+    n4::ui(argc, argv);
 
 }
