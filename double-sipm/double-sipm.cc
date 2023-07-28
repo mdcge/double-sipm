@@ -44,16 +44,14 @@ G4double delta_total_energy(G4Step const * step) {
 }
 
 // Main part of run action
-void add_step_edep(G4double& total_edep_0, G4double& total_edep_1, G4Step const* step) {
+void add_step_edep(std::vector<G4double>& total_edep, G4Step const* step) {
     auto step_solid_name = step -> GetPreStepPoint() -> GetTouchable() -> GetVolume() -> GetName();
-    if      (step_solid_name == "Scintillator-0") { total_edep_0 += delta_total_energy(step); }
-    else if (step_solid_name == "Scintillator-1") { total_edep_1 += delta_total_energy(step); }
+    if      (step_solid_name == "Scintillator-0") { total_edep[0] += delta_total_energy(step); }
+    else if (step_solid_name == "Scintillator-1") { total_edep[1] += delta_total_energy(step); }
 }
 
 int main(int argc, char *argv[]) {
 
-    G4double total_edep_0 = 0;
-    G4double total_edep_1 = 0;
     std::ofstream data_file;
 
     // User action functions ------------------------
@@ -65,20 +63,21 @@ int main(int argc, char *argv[]) {
     auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
 
     // Event actions
-    auto reset_total_edep = [&total_edep_0, &total_edep_1] (G4Event const*) {
-        total_edep_0 = 0;
-        total_edep_1 = 0;
+    std::vector<G4double> total_edep{0,0};
+    auto reset_total_edep = [&total_edep] (G4Event const*) {
+        total_edep[0] = 0;
+        total_edep[1] = 0;
     };
-    auto print_total_edep = [&data_file, &total_edep_0, &total_edep_1] (G4Event const*) {
-        G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep_0
-               << "\nTotal deposited energy in scintillator 1: " << total_edep_1 << G4endl << G4endl;
+    auto print_total_edep = [&data_file, &total_edep] (G4Event const*) {
+        G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep[0]
+               << "\nTotal deposited energy in scintillator 1: " << total_edep[1] << G4endl << G4endl;
 
-        data_file << total_edep_0 << "," << total_edep_1 << std::endl;
+        data_file << total_edep[0] << "," << total_edep[1] << std::endl;
     };
 
     // Stepping action
     // This can be used to move the closure "out of scope" (add_step_edep is outside of main)
-    auto accumulate_energy = [&total_edep_0, &total_edep_1] (G4Step const* step) { add_step_edep(total_edep_0, total_edep_1, step); };
+    auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
 
     // Stacking action
     auto kill_secondaries = [] (G4Track const* track) {
