@@ -4,6 +4,7 @@
 #include "n4-volumes.hh"
 #include "g4-mandatory.hh"
 
+#include <CLHEP/Units/PhysicalConstants.h>
 #include <CLHEP/Units/SystemOfUnits.h>
 #include <CLHEP/Vector/ThreeVector.h>
 #include <FTFP_BERT.hh>
@@ -51,7 +52,7 @@ G4PVPlacement* make_geometry() {
 
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
     //  csi_scint: Fig. 2 in the paper
-    auto hc = 1.239841939;
+    auto hc = CLHEP::h_Planck * CLHEP::c_light;
     auto csi_energy       = n4::scale_by(hc*eV, {1/0.35, 1/0.54, 1/0.7, 1/0.9}) ; // denominator is wavelength in micrometres
     vec_double csi_rindex =                     {1.79  , 1.79  , 1.79 , 1.79 };   //vec_double csi_rindex = {2.2094, 1.7611};
     vec_double  csi_scint =                     {0.0   , 1.0   , 0.1  , 0.0  };
