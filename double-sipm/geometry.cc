@@ -133,7 +133,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         track -> SetTrackStatus(fStopAndKill);
 
         G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
-        G4int time = step -> GetPreStepPoint() -> GetGlobalTime();
+        G4int time = step -> GetPreStepPoint() -> GetGlobalTime(); // time (double) stored as int! Without units!
         G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
         G4double photon_energy = photon_momentum.mag();
 
