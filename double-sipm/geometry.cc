@@ -24,8 +24,7 @@
 
 using vec_double = std::vector<G4double>;
 
-const G4double OPTPHOT_MIN_E = 1    * eV;
-const G4double OPTPHOT_MAX_E = 8.21 * eV;
+const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
 G4PVPlacement* make_geometry() {
     auto LXe = new G4Material("LXe", 54., 131.29 * g / mole, 3.020 * g / cm3);
@@ -74,7 +73,7 @@ G4PVPlacement* make_geometry() {
 
     auto air = n4::material("G4_AIR");
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
-        .add("RINDEX", {OPTPHOT_MIN_E, OPTPHOT_MAX_E}, {1, 1})
+        .add("RINDEX", OPTPHOT_ENERGY_RANGE, {1, 1})
         .done();
     air -> SetMaterialPropertiesTable(mpt_air);
 
@@ -82,7 +81,7 @@ G4PVPlacement* make_geometry() {
     // Values could be taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
     // but are also stated in the same paper as above
     G4MaterialPropertiesTable *mpt_teflon = n4::material_properties()
-        .add("RINDEX", {OPTPHOT_MIN_E, OPTPHOT_MAX_E}, {1.35, 1.35})
+        .add("RINDEX", OPTPHOT_ENERGY_RANGE, {1.35, 1.35})
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
 
