@@ -183,17 +183,18 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
 }
 
 G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation) {
-    G4int index;
-    G4int length = (G4int) energies.size() - 1;
-    if (energy < energies[0] || energies[length] < energy) {
-        return 0;
-    }
-    for (G4int i=0; i<length; i++) {
-        if (energies[i] <= energy && energy <= energies[i+1]) {
+    // Detection probablity = 0 if energy lies outside of range
+    if (! (energies.front() <= energy && energy <= energies.back())) { return 0; }
+
+    // Find index of first point above desired energy
+    size_t index = 0;
+    for (size_t i=1; i<energies.size(); i++) {
+        if (energy < energies[i]) {
             index = i;
+            break;
         }
     }
-    G4double y0 = scintillation[index]; G4double y1 = scintillation[index+1];
-    G4double x0 = energies[index]; G4double x1 = energies[index+1];
+    G4double y0 = scintillation[index-1]; G4double y1 = scintillation[index];
+    G4double x0 = energies     [index-1]; G4double x1 = energies     [index];
     return y0 + ((y1 - y0) / (x1 - x0)) * (energy - x0);
 }
