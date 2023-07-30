@@ -39,8 +39,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     auto teflon = teflon_with_properties();
     auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
 
-    G4double scint_xy = 3*mm, scint_z = 2*cm;
-    G4double world_size = 10*cm;
+    G4double scint_xy = 3*mm, scint_z = 20*mm;
+    G4double world_size = 100*mm;
     G4double coating_thck = 0.25*mm;
     auto coating_interior = n4::box("CoatingInterior").xy(scint_xy                 ).z(scint_z               );
     auto coating_logical  = n4::box("CoatingExterior").xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
