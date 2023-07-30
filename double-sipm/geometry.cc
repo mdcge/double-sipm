@@ -117,9 +117,8 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     csi_teflon_surface -> SetFinish(groundfrontpainted);
     csi_teflon_surface -> SetSigmaAlpha(0.0);
 
-    // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("CsI-TeflonSurface", scint0, coat0, csi_teflon_surface);
-    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("CsI-TeflonSurface", scint1, coat1, csi_teflon_surface);
+    new G4LogicalBorderSurface("CsI-TeflonSurface", scint0, coat0, csi_teflon_surface);
+    new G4LogicalBorderSurface("CsI-TeflonSurface", scint1, coat1, csi_teflon_surface);
 
     vec_double pp = {2.038*eV, 4.144*eV};
     // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
