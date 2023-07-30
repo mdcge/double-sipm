@@ -43,8 +43,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     G4double world_size = 10*cm;
     G4double coating_thck = 0.25*mm;
     // auto cylinder = n4::tubs("Cylinder").r(10*cm).z(1*cm).volume(copper);
-    auto coating_interior = n4::box("CoatingInterior").cube(scint_xy                 ).z(scint_z                );
-    auto coating_logical  = n4::box("CoatingExterior").cube(scint_xy + coating_thck*2).z(scint_z  + coating_thck)
+    auto coating_interior = n4::box("CoatingInterior").xy(scint_xy                 ).z(scint_z                );
+    auto coating_logical  = n4::box("CoatingExterior").xy(scint_xy + coating_thck*2).z(scint_z  + coating_thck)
         .subtract(coating_interior)
         .at(0, 0, -coating_thck/2)
         .name("Coating")
