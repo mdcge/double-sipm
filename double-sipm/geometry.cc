@@ -40,7 +40,6 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
 
     G4double scint_xy = 3*mm, scint_z = 20*mm;
-    G4double world_size = 100*mm;
     G4double coating_thck = 0.25*mm;
     auto scintillator_space = n4::box("Scintillator-space").xy(scint_xy                 ).z(scint_z               );
     auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
@@ -53,7 +52,7 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
     G4double detector_depth = detector_width; // this will make the detectors cubes
     auto detector = n4::box{"Detector"}.xy(detector_width).z(detector_depth).volume(air); // material doesn't matter
-    auto world    = n4::box{"World"   }.cube(world_size).volume(air);
+    auto world    = n4::box{"World"   }.cube(100*mm).volume(air);
 
     auto scintillator_offset = 23*mm;
     n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
