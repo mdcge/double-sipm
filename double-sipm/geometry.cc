@@ -61,28 +61,26 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto teflon = teflon_with_properties();
     auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
 
-    G4double scint_xy = 3*mm, scint_z = 20*mm;
-    G4double coating_thck = 0.25*mm;
+    auto world = n4::box{"World"}.cube(100*mm).volume(air);
+
+    auto scint_xy = 3*mm, scint_z = 20*mm, coating_thck = 0.25*mm,  scintillator_offset = 23*mm;
     auto scintillator_space = n4::box("Scintillator-space").xy(scint_xy                 ).z(scint_z               );
     auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
         .subtract(scintillator_space)
         .at(0, 0, -coating_thck/2)
         .volume(teflon);
     auto scintillator = scintillator_space.name("Scintillator").volume(csi);
-
-    G4int nb_detectors_per_side = 3;
-    G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
-    G4double detector_depth = detector_width; // this will make the detectors cubes
-    auto detector = n4::box{"Detector"}.xy(detector_width).z(detector_depth).volume(air); // material doesn't matter
-    auto world    = n4::box{"World"   }.cube(100*mm).volume(air);
-
-    auto scintillator_offset = 23*mm;
     auto scint0 = n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
     auto scint1 = n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
     auto  coat0 = n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
     auto  coat1 = n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
     place_csi_teflon_border_surface_between(scint0, coat0);
     place_csi_teflon_border_surface_between(scint1, coat1);
+
+    G4int nb_detectors_per_side = 3;
+    G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
+    G4double detector_depth = detector_width; // this will make the detectors cubes
+    auto detector = n4::box{"Detector"}.xy(detector_width).z(detector_depth).volume(air); // material doesn't matter
 
     auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
     n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
