@@ -63,8 +63,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     n4::place(coating_logical).in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
     n4::place(coating_logical).in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
-    G4double source_ring_rmax = 12.5*mm; G4double source_ring_rmin = 9.5*mm; G4double source_ring_thck = 3*mm;
-    auto source_ring = n4::volume<G4Tubs>("SourceRing", plastic, source_ring_rmin, source_ring_rmax, source_ring_thck, 0*deg, 360*deg);
+    auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
 
     n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
 
