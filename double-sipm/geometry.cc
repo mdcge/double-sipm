@@ -87,10 +87,11 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
-        G4int copy_nb = step -> GetPreStepPoint() -> GetTouchable() -> GetCopyNumber();
-        G4int time = step -> GetPreStepPoint() -> GetGlobalTime(); // time (double) stored as int! Without units!
-        G4ThreeVector photon_momentum = step -> GetPreStepPoint() -> GetMomentum();
-        G4double photon_energy = photon_momentum.mag();
+        auto pre             = step -> GetPreStepPoint();
+        auto copy_nb         = pre  -> GetTouchable() -> GetCopyNumber();
+        auto time            = pre  -> GetGlobalTime(); // This will be written to file: what are the units?
+        auto photon_momentum = pre -> GetMomentum();
+        auto photon_energy   = photon_momentum.mag();
 
         // Pixel pitch 25 um
         auto sipm_energies = n4::scale_by(hc*eV, {1/0.9 , 1/0.7, 1/0.5  , 1/0.46 , 1/0.4 , 1/0.32});
