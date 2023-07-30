@@ -31,7 +31,7 @@ const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
 G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation);
 
-G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
+G4Material* csi_with_properties() {
     auto csi = n4::material("G4_CESIUM_IODIDE");
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
     //  csi_scint: Fig. 2 in the paper
@@ -63,7 +63,11 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         .done();
     csi -> GetIonisation() -> SetBirksConstant(0.00152 * mm/MeV);
     csi -> SetMaterialPropertiesTable(csi_mpt);
+    return csi;
+}
 
+G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
+    auto csi = csi_with_properties();
     auto air = n4::material("G4_AIR");
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
         .add("RINDEX", OPTPHOT_ENERGY_RANGE, {1, 1})
