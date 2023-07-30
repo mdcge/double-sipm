@@ -55,10 +55,10 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto world    = n4::box{"World"   }.cube(100*mm).volume(air);
 
     auto scintillator_offset = 23*mm;
-    n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
-    n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
-    n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
-    n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+    auto scint0 = n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
+    auto scint1 = n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
+    auto  coat0 = n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
+    auto  coat1 = n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
     auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
 
@@ -108,10 +108,6 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto sens_detector = (new n4::sensitive_detector{"Detector", process_hits}) -> end_of_event(end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
 
-    // Border surface ------------------------------------------
-    // Check which world's daughter is which object
-    //G4cout << "XXXXXXXXXXXXXXXX " << world->GetDaughter(2)->GetName() << G4endl;
-
     G4OpticalSurface* csi_teflon_surface = new G4OpticalSurface("CsI-TeflonSurface");
 
     // Values from same paper as above ("Optimization of Parameters...")
@@ -121,10 +117,9 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     csi_teflon_surface -> SetFinish(groundfrontpainted);
     csi_teflon_surface -> SetSigmaAlpha(0.0);
 
-    // world's 2nd daughter is the right teflon coating, world's 0th daughter is the right scintillator
     // this seems to apply the surface to the two physical objects without needing assignment
-    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("CsI-TeflonSurface", world->GetDaughter(0), world->GetDaughter(2), csi_teflon_surface);
-    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("CsI-TeflonSurface", world->GetDaughter(1), world->GetDaughter(3), csi_teflon_surface);
+    G4LogicalBorderSurface* border0 = new G4LogicalBorderSurface("CsI-TeflonSurface", scint0, coat0, csi_teflon_surface);
+    G4LogicalBorderSurface* border1 = new G4LogicalBorderSurface("CsI-TeflonSurface", scint1, coat1, csi_teflon_surface);
 
     vec_double pp = {2.038*eV, 4.144*eV};
     // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
