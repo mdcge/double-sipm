@@ -17,6 +17,7 @@
 #include <G4OpticalPhysics.hh>
 #include <G4OpticalSurface.hh>
 #include <G4LogicalBorderSurface.hh>
+#include <G4PVPlacement.hh>
 #include <G4SubtractionSolid.hh>
 #include <G4RunManagerFactory.hh>
 #include <G4SystemOfUnits.hh>
@@ -32,6 +33,27 @@ const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 
 G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation);
 
+void place_csi_teflon_border_surface_between(G4PVPlacement* one, G4PVPlacement* two) {
+    static G4OpticalSurface* csi_teflon_surface = nullptr;
+    auto name = "CsI-TeflonSurface";
+    if (! csi_teflon_surface) {
+        csi_teflon_surface = new G4OpticalSurface(name);
+        // Values from same paper as above ("Optimization of Parameters...")
+        // "groundfrontpainted" (I think) only considers whether the photon is reflected or absorbed, so there will be no shine through visible in the simulation
+        csi_teflon_surface -> SetType(dielectric_dielectric);
+        csi_teflon_surface -> SetModel(unified);
+        csi_teflon_surface -> SetFinish(groundfrontpainted);
+        csi_teflon_surface -> SetSigmaAlpha(0.0);
+
+        vec_double pp = {2.038*eV, 4.144*eV};
+        // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
+        csi_teflon_surface -> SetMaterialPropertiesTable(
+            n4::material_properties{}
+            .add("REFLECTIVITY", pp, {0.98 , 0.98})
+            .done());
+    }
+    new G4LogicalBorderSurface(name, one, two, csi_teflon_surface);
+}
 
 G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arrival) {
     auto csi    =    csi_with_properties();
@@ -108,25 +130,8 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto sens_detector = (new n4::sensitive_detector{"Detector", process_hits}) -> end_of_event(end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
 
-    G4OpticalSurface* csi_teflon_surface = new G4OpticalSurface("CsI-TeflonSurface");
-
-    // Values from same paper as above ("Optimization of Parameters...")
-    // "groundfrontpainted" (I think) only considers whether the photon is reflected or absorbed, so there will be no shine through visible in the simulation
-    csi_teflon_surface -> SetType(dielectric_dielectric);
-    csi_teflon_surface -> SetModel(unified);
-    csi_teflon_surface -> SetFinish(groundfrontpainted);
-    csi_teflon_surface -> SetSigmaAlpha(0.0);
-
-    new G4LogicalBorderSurface("CsI-TeflonSurface", scint0, coat0, csi_teflon_surface);
-    new G4LogicalBorderSurface("CsI-TeflonSurface", scint1, coat1, csi_teflon_surface);
-
-    vec_double pp = {2.038*eV, 4.144*eV};
-    // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
-    csi_teflon_surface -> SetMaterialPropertiesTable(
-        n4::material_properties{}
-           .add("REFLECTIVITY", pp, {0.98 , 0.98})
-           .done()
-    );
+    place_csi_teflon_border_surface_between(scint0, coat0);
+    place_csi_teflon_border_surface_between(scint1, coat1);
 
     return n4::place(world).now();
 }
