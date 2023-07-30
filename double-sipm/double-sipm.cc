@@ -55,13 +55,14 @@ int main(int argc, char *argv[]) {
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
     // Open output file at start of run, close it at the end of the run
-    std::ofstream data_file_0;
-    std::ofstream data_file_1;
-    auto  open_file = [&data_file_0, &data_file_1] (G4Run const*) {
-        data_file_0.open("G4_photon_times_0.csv");
-        data_file_1.open("G4_photon_times_1.csv");
+
+    std::ofstream data_file_0; std::ofstream data_file_1;
+    std::vector<std::ofstream*> data_file{&data_file_0, &data_file_1};
+    auto open_file = [&data_file] (G4Run const*) {
+        data_file[0] -> open("G4_photon_times_0.csv");
+        data_file[1] -> open("G4_photon_times_1.csv");
     };
-    auto close_file = [&data_file_0, &data_file_1] (G4Run const*) { data_file_0.close(); data_file_1.close(); };
+    auto close_file = [&data_file] (G4Run const*) { data_file[0] -> close(); data_file[1] -> close(); };
 
     // Accumulators for energy and photons observed in each scintillator during a single event
     std::vector<G4double> total_edep{0, 0};
@@ -76,7 +77,7 @@ int main(int argc, char *argv[]) {
     };
 
     G4int double_hits = 0;
-    auto write_photon_count = [&data_file_0, &data_file_1, &double_hits, &total_edep, &photon_count, &times_of_arrival] (G4Event const* event) {
+    auto write_photon_count = [&data_file, &double_hits, &total_edep, &photon_count, &times_of_arrival] (G4Event const* event) {
         //G4cout << "Event number: " << event -> GetEventID() << G4endl;
         // G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
         // G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
@@ -85,20 +86,14 @@ int main(int argc, char *argv[]) {
 
         G4cout << "Number of double events: " << double_hits << "/" << event -> GetEventID() << " events" << G4endl;
         // G4cout << "Number of times: " << times_of_arrival[0].size() << " and " << times_of_arrival[1].size() << G4endl;
-        if (photon_count[0] > 0 && photon_count[1] > 0) {
-            double_hits += 1;
+        if (photon_count[0] > 0 && photon_count[1] > 0) { double_hits += 1; }
+        for (int side=0; side < 2; ++side) {
+            for (size_t i=0; i<times_of_arrival[side].size(); i++) {
+                if (photon_count[side] != 0) { *data_file[side] << times_of_arrival[side][i] << ","; }
+                else                         { *data_file[side] << 0; }
+            }
+            *data_file[side] << std::endl;
         }
-        for (G4int i=0; i<times_of_arrival[0].size(); i++) {
-            if (photon_count[0] != 0) { data_file_0 << times_of_arrival[0][i] << ","; }
-            else                      { data_file_0 << 0; }
-        }
-        data_file_0 << std::endl;
-
-        for (G4int i=0; i<times_of_arrival[1].size(); i++) {
-            if (photon_count[1] != 0) { data_file_1 << times_of_arrival[1][i] << ","; }
-            else                      { data_file_1 << 0; }
-        }
-        data_file_1 << std::endl;
     };
 
     // At every step: increment running total of deposited energy during the event
