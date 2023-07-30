@@ -15,7 +15,6 @@
 #include <G4OpticalPhysics.hh>
 #include <G4OpticalSurface.hh>
 #include <G4LogicalBorderSurface.hh>
-#include <G4RotationMatrix.hh>
 #include <G4SubtractionSolid.hh>
 #include <G4RunManagerFactory.hh>
 #include <G4SystemOfUnits.hh>
@@ -101,8 +100,6 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
         .name("Coating")
         .volume(teflon);
 
-    auto rotY180 = new G4RotationMatrix(); rotY180 -> rotateY(180*deg);
-
     G4int nb_detectors_per_side = 3;
     G4double half_detector_width = scint_xy / 2 / nb_detectors_per_side; // assumes the detectors are square
     G4double half_detector_depth = half_detector_width; // this will make the detectors cubes
@@ -112,17 +109,15 @@ G4PVPlacement* make_geometry(vec_int& photon_count) {
 
     auto scintillator_offset = 23*mm;
     auto scintillator = coating_interior.name("Scintillator").volume(csi);
-    n4::place(scintillator)   .in(world)                 .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
-    n4::place(scintillator)   .in(world)                 .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
-    n4::place(coating_logical).in(world).rotate(*rotY180).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
-    n4::place(coating_logical).in(world)                 .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+    n4::place(scintillator)   .in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
+    n4::place(scintillator)   .in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
+    n4::place(coating_logical).in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
+    n4::place(coating_logical).in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
     G4double source_ring_rmax = 12.5*mm; G4double source_ring_rmin = 9.5*mm; G4double source_ring_thck = 3*mm;
     auto source_ring = n4::volume<G4Tubs>("SourceRing", plastic, source_ring_rmin, source_ring_rmax, source_ring_thck, 0*deg, 360*deg);
-    auto rotY90 = new G4RotationMatrix();
-    rotY90 -> rotateY(90*deg);
 
-    n4::place(source_ring).in(world).rotate(*rotY90).at({0, 0, 0}).now();
+    n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
 
     for (G4int side=0; side<2; side++) {
         for (G4int i=0; i<nb_detectors_per_side; i++) {
