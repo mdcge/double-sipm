@@ -81,9 +81,10 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto scint1 = n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
     auto  coat0 = n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
     auto  coat1 = n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+    place_csi_teflon_border_surface_between(scint0, coat0);
+    place_csi_teflon_border_surface_between(scint1, coat1);
 
     auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
-
     n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
 
     for (G4int side=0; side<2; side++) {
@@ -129,9 +130,6 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto end_of_event = [](G4HCofThisEvent* what) {};
     auto sens_detector = (new n4::sensitive_detector{"Detector", process_hits}) -> end_of_event(end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
-
-    place_csi_teflon_border_surface_between(scint0, coat0);
-    place_csi_teflon_border_surface_between(scint1, coat1);
 
     return n4::place(world).now();
 }
