@@ -42,9 +42,9 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     G4double scint_xy = 3*mm, scint_z = 20*mm;
     G4double world_size = 100*mm;
     G4double coating_thck = 0.25*mm;
-    auto coating_interior = n4::box("CoatingInterior").xy(scint_xy                 ).z(scint_z               );
-    auto coating_logical  = n4::box("CoatingExterior").xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
-        .subtract(coating_interior)
+    auto scintillator_space = n4::box("Scintillator-space").xy(scint_xy                 ).z(scint_z               );
+    auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
+        .subtract(scintillator_space)
         .at(0, 0, -coating_thck/2)
         .name("Coating")
         .volume(teflon);
@@ -56,11 +56,11 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     auto world    = n4::box{"World"   }.cube(world_size).volume(air);
 
     auto scintillator_offset = 23*mm;
-    auto scintillator = coating_interior.name("Scintillator").volume(csi);
-    n4::place(scintillator)   .in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
-    n4::place(scintillator)   .in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
-    n4::place(coating_logical).in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
-    n4::place(coating_logical).in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
+    auto scintillator = scintillator_space.name("Scintillator").volume(csi);
+    n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
+    n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
+    n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
+    n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
 
     auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
 
