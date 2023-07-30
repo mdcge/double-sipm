@@ -33,7 +33,7 @@ const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation);
 
 
-G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
+G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arrival) {
     auto csi    =    csi_with_properties();
     auto air    =    air_with_properties();
     auto teflon = teflon_with_properties();
@@ -83,7 +83,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     }
 
     // Detector physics -------------------------------------
-    auto process_hits = [nb_detectors_per_side, &photon_count, &times_of_arrival](G4Step* step) {
+    auto process_hits = [nb_detectors_per_side, &times_of_arrival](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
 
@@ -98,8 +98,8 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         std::vector<G4double> sipm_pdes =        {  0.03,   0.1,   0.245,   0.255,   0.23,   0.02};
 
         if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
-            if (copy_nb < pow(nb_detectors_per_side, 2)) { photon_count[0]++; times_of_arrival[0].push_back(time); }
-            else                                         { photon_count[1]++; times_of_arrival[1].push_back(time); }
+            if (copy_nb < pow(nb_detectors_per_side, 2)) { times_of_arrival[0].push_back(time); }
+            else                                         { times_of_arrival[1].push_back(time); }
         }
 
         return true;

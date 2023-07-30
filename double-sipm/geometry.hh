@@ -3,6 +3,6 @@
 
 #include <G4PVPlacement.hh>
 
-G4PVPlacement* make_geometry(std::vector<int>& photon_count, std::vector<std::vector<G4double>>&);
+G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arrival);
 
 #endif // GEOMETRY_H_
