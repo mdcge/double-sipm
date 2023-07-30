@@ -29,7 +29,7 @@ using vec_int    = std::vector<G4int>;
 const G4double hc = CLHEP::h_Planck * CLHEP::c_light;
 const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 
-G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation);
+G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation);
 
 G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
     auto csi = n4::material("G4_CESIUM_IODIDE");
@@ -182,8 +182,7 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     return n4::place(world).now();
 }
 
-// TODO: refactor detection_probability (vectors passed by value, etc.)
-G4double detection_probability(G4double energy, std::vector<G4double> energies, std::vector<G4double> scintillation) {
+G4double detection_probability(G4double energy, std::vector<G4double>& energies, std::vector<G4double>& scintillation) {
     G4int index;
     G4int length = (G4int) energies.size() - 1;
     if (energy < energies[0] || energies[length] < energy) {
