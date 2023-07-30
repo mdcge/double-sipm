@@ -47,6 +47,7 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
         .subtract(scintillator_space)
         .at(0, 0, -coating_thck/2)
         .volume(teflon);
+    auto scintillator = scintillator_space.name("Scintillator").volume(csi);
 
     G4int nb_detectors_per_side = 3;
     G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
@@ -55,7 +56,6 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto world    = n4::box{"World"   }.cube(world_size).volume(air);
 
     auto scintillator_offset = 23*mm;
-    auto scintillator = scintillator_space.name("Scintillator").volume(csi);
     n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
     n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
     n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
