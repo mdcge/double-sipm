@@ -51,11 +51,10 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         .volume(teflon);
 
     G4int nb_detectors_per_side = 3;
-    G4double half_detector_width = scint_xy / 2 / nb_detectors_per_side; // assumes the detectors are square
-    G4double half_detector_depth = half_detector_width; // this will make the detectors cubes
-    auto detector = n4::volume<G4Box>("Detector", air, half_detector_width, half_detector_width, half_detector_depth); // material doesn't matter
-
-    auto world = n4::box{"World"}.cube(world_size).volume(air);
+    G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
+    G4double detector_depth = detector_width; // this will make the detectors cubes
+    auto detector = n4::box{"Detector"}.xy(detector_width).z(detector_depth).volume(air); // material doesn't matter
+    auto world    = n4::box{"World"   }.cube(world_size).volume(air);
 
     auto scintillator_offset = 23*mm;
     auto scintillator = coating_interior.name("Scintillator").volume(csi);
@@ -72,11 +71,11 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     for (G4int side=0; side<2; side++) {
         for (G4int i=0; i<nb_detectors_per_side; i++) {
             for (G4int j=0; j<nb_detectors_per_side; j++) {
-                G4double xpos = (i - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
-                G4double ypos = (j - ((float) nb_detectors_per_side/2 - 0.5)) * 2*half_detector_width;
+                G4double xpos = (i - ((float) nb_detectors_per_side/2 - 0.5)) * detector_width;
+                G4double ypos = (j - ((float) nb_detectors_per_side/2 - 0.5)) * detector_width;
                 G4double zpos;
-                if (side == 0) { zpos =   scintillator_offset + scint_z/2 + half_detector_depth;  }
-                else           { zpos = -(scintillator_offset + scint_z/2 + half_detector_depth); }
+                if (side == 0) { zpos =   scintillator_offset + scint_z/2 + detector_depth/2;  }
+                else           { zpos = -(scintillator_offset + scint_z/2 + detector_depth/2); }
                 n4::place(detector)
                     .in(world)
                     .at({xpos, ypos, zpos})
