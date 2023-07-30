@@ -11,6 +11,7 @@
 #include <G4EmStandardPhysics_option4.hh>
 #include <G4HCofThisEvent.hh>
 #include <G4LogicalVolume.hh>
+#include <G4Material.hh>
 #include <G4MaterialPropertiesTable.hh>
 #include <G4OpticalPhysics.hh>
 #include <G4OpticalSurface.hh>
@@ -66,14 +67,16 @@ G4Material* csi_with_properties() {
     return csi;
 }
 
-G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
-    auto csi = csi_with_properties();
+G4Material* air_with_properties() {
     auto air = n4::material("G4_AIR");
     G4MaterialPropertiesTable *mpt_air = n4::material_properties()
         .add("RINDEX", OPTPHOT_ENERGY_RANGE, {1, 1})
         .done();
     air -> SetMaterialPropertiesTable(mpt_air);
+    return air;
+}
 
+G4Material* teflon_with_properties() {
     auto teflon = n4::material("G4_TEFLON");
     // Values could be taken from "Optical properties of Teflon AF amorphous fluoropolymers" by Yang, French & Tokarsky (using AF2400, Fig.6)
     // but are also stated in the same paper as above
@@ -81,6 +84,13 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
         .add("RINDEX", OPTPHOT_ENERGY_RANGE, {1.35, 1.35})
         .done();
     teflon -> SetMaterialPropertiesTable(mpt_teflon);
+    return teflon;
+}
+
+G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4double>>& times_of_arrival) {
+    auto csi    =    csi_with_properties();
+    auto air    =    air_with_properties();
+    auto teflon = teflon_with_properties();
 
     auto plastic = n4::material("G4_POLYCARBONATE"); // probably wrong
 
