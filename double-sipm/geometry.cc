@@ -46,7 +46,6 @@ G4PVPlacement* make_geometry(vec_int& photon_count, std::vector<std::vector<G4do
     auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
         .subtract(scintillator_space)
         .at(0, 0, -coating_thck/2)
-        .name("Coating")
         .volume(teflon);
 
     G4int nb_detectors_per_side = 3;
