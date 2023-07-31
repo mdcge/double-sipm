@@ -128,6 +128,8 @@
 
 /vis/scene/add/axes    # Simple axes: x=red, y=green, z=blue.
 
+/vis/viewer/centreOn World
+
 # /vis/viewer/set/style surface
 
 # # To draw only gammas:
