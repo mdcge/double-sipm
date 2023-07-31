@@ -135,10 +135,12 @@
 # /vis/filtering/trajectories/particleFilter-0/add gamma
 
 
-/vis/geometry/set/visibility SourceRing 0 false
-/vis/geometry/set/visibility Detector   0 false
+/vis/geometry/set/visibility Detector   0 true
 
-/vis/geometry/set/colour Scintillator 0 1 0 0 0.7
-/vis/geometry/set/colour Coating      0 0 1 0 1
+#                          name        depth  R   G   B   opacity
+/vis/geometry/set/colour Scintillator    0   1   0   0      1
+/vis/geometry/set/colour Coating         0   1   0.4 0.4    1
+/vis/geometry/set/colour SourceRing      0   0   1   1      1
+/vis/geometry/set/colour Detector        0   1   1   0      1
 
 #/control/execute macs/run.mac
