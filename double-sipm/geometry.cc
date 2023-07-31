@@ -63,6 +63,10 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
 
     auto world = n4::box{"World"}.cube(100*mm).volume(air);
 
+    auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
+    n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
+
+    // ---- Teflon-coated scintillators ----------------------------------------------------------------------
     auto scint_xy = 3*mm, scint_z = 20*mm, coating_thck = 0.25*mm,  scintillator_offset = 23*mm;
     auto scintillator_space = n4::box("Scintillator-space").xy(scint_xy                 ).z(scint_z               );
     auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
@@ -77,13 +81,11 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     place_csi_teflon_border_surface_between(scint0, coat0);
     place_csi_teflon_border_surface_between(scint1, coat1);
 
+    // ---- Detector geometry --------------------------------------------------------------------------------
     G4int nb_detectors_per_side = 3;
     G4double detector_width = scint_xy / nb_detectors_per_side; // assumes the detectors are square
     G4double detector_depth = detector_width; // this will make the detectors cubes
     auto detector = n4::box{"Detector"}.xy(detector_width).z(detector_depth).volume(air); // material doesn't matter
-
-    auto source_ring = n4::tubs("SourceRing").r_inner(9.5*mm).r(12.5*mm).z(3*mm).volume(plastic);
-    n4::place(source_ring).in(world).rotate_y(90*deg).at({0, 0, 0}).now();
 
     for (G4int side=0; side<2; side++) {
         for (G4int i=0; i<nb_detectors_per_side; i++) {
@@ -102,7 +104,7 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
         }
     }
 
-    // Detector physics -------------------------------------
+    // ---- Detector behaviour -------------------------------------------------------------------------------
     auto process_hits = [nb_detectors_per_side, &times_of_arrival](G4Step* step) {
         G4Track* track = step -> GetTrack();
         track -> SetTrackStatus(fStopAndKill);
@@ -128,7 +130,7 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto end_of_event = [](G4HCofThisEvent* what) {};
     auto sens_detector = (new n4::sensitive_detector{"Detector", process_hits}) -> end_of_event(end_of_event);
     detector -> SetSensitiveDetector(sens_detector);
-
+    // -------------------------------------------------------------------------------------------------------
     return n4::place(world).now();
 }
 
