@@ -68,18 +68,14 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
 
     // ---- Teflon-coated scintillators ----------------------------------------------------------------------
     auto scint_xy = 3*mm, scint_z = 20*mm, coating_thck = 0.25*mm,  scintillator_offset = 23*mm;
-    auto scintillator_space = n4::box("Scintillator-space").xy(scint_xy                 ).z(scint_z               );
-    auto coating            = n4::box("Coating"           ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck)
-        .subtract(scintillator_space)
-        .at(0, 0, -coating_thck/2)
-        .volume(teflon);
-    auto scintillator = scintillator_space.name("Scintillator").volume(csi);
-    auto scint0 = n4::place(scintillator).in(world)                  .at({0, 0,  scintillator_offset                   }).copy_no(0).now();
-    auto scint1 = n4::place(scintillator).in(world)                  .at({0, 0, -scintillator_offset                   }).copy_no(1).now();
-    auto  coat0 = n4::place(coating)     .in(world).rotate_y(180*deg).at({0, 0,  scintillator_offset - (coating_thck/2)}).copy_no(0).now();
-    auto  coat1 = n4::place(coating)     .in(world)                  .at({0, 0, -scintillator_offset + (coating_thck/2)}).copy_no(1).now();
-    place_csi_teflon_border_surface_between(scint0, coat0);
-    place_csi_teflon_border_surface_between(scint1, coat1);
+
+    auto coating_log  = n4::box("Coating"     ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck).volume(teflon);
+    auto scintillator = n4::box("Scintillator").xy(scint_xy                 ).z(scint_z               ).place (csi)
+        .in(coating_log).at(0, 0, coating_thck/2).now();
+    auto coating0 = n4::place(coating_log).in(world).at(0, 0, scintillator_offset).rotate_y(  0*deg).copy_no(0).now();
+    auto coating1 = n4::place(coating_log).in(world).at(0, 0, scintillator_offset).rotate_y(180*deg).copy_no(1).now();
+    place_csi_teflon_border_surface_between(scintillator, coating0);
+    place_csi_teflon_border_surface_between(scintillator, coating1);
 
     // ---- Detector geometry --------------------------------------------------------------------------------
     G4int nb_detectors_per_side = 3;
