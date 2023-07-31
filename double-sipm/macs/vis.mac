@@ -126,7 +126,7 @@
 
 #/tracking/verbose 2
 
-/vis/scene/add/axes    # Simple axes: x=red, y=green, z=blue.
+#/vis/scene/add/axes    # Simple axes: x=red, y=green, z=blue.
 
 /vis/viewer/centreOn World
 
