@@ -1,4 +1,4 @@
 # -*-Makefile-*-
 
-run MACRO='':
-	just double-sipm/run {{MACRO}}
+run ARG1='' ARG2='':
+	just double-sipm/run {{ARG1}} {{ARG2}}

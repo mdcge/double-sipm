@@ -1,11 +1,11 @@
 # -*-Makefile-*-
 
 # (Re)compile and run
-run MACRO='':
+run ARG1='' ARG2='':
 	#!/usr/bin/env sh
 	cmake -S . -B build &&
 	cmake --build build -j &&
-	build/double-sipm {{MACRO}}
+	build/double-sipm {{ARG1}} {{ARG2}}
 
 # Remove all traces of the local copy of the example
 clean:
