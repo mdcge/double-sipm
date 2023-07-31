@@ -55,6 +55,15 @@ void place_csi_teflon_border_surface_between(G4PVPlacement* one, G4PVPlacement* 
     new G4LogicalBorderSurface(name, one, two, csi_teflon_surface);
 }
 
+namespace n4 {
+  G4LogicalVolume* clone(G4LogicalVolume* original) {
+    return new G4LogicalVolume(
+        original -> GetSolid(),
+        original -> GetMaterial(),
+        original -> GetName() + "-cloned");
+  }
+};
+
 G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arrival) {
     auto csi    =    csi_with_properties();
     auto air    =    air_with_properties();
@@ -72,15 +81,12 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto coating_log  = n4::box("Coating"     ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck).volume(teflon);
     auto scintillator = n4::box("Scintillator").xy(scint_xy                 ).z(scint_z               ).place (csi)
         .in(coating_log).at(0, 0, coating_thck/2).now();
-    auto coating_cloned = new G4LogicalVolume(
-        coating_log -> GetSolid(),
-        coating_log -> GetMaterial(),
-        "Coating-cloned");
-    auto coating_phy = n4::place(coating_log).in(coating_cloned).now();
-    place_csi_teflon_border_surface_between(scintillator, coating_phy);
+    auto coated_scint_log = n4::clone(coating_log);
+    auto coating = n4::place(coating_log).in(coated_scint_log).now();
+    place_csi_teflon_border_surface_between(scintillator, coating);
 
-    auto coating0 = n4::place(coating_cloned).in(world).at(0, 0, scintillator_offset).rotate_y(  0*deg).copy_no(0).now();
-    auto coating1 = n4::place(coating_cloned).in(world).at(0, 0, scintillator_offset).rotate_y(180*deg).copy_no(1).now();
+    auto coating0 = n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(  0*deg).copy_no(0).now();
+    auto coating1 = n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(180*deg).copy_no(1).now();
 
     // ---- Detector geometry --------------------------------------------------------------------------------
     G4int nb_detectors_per_side = 3;
