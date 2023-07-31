@@ -36,6 +36,7 @@
             clang-tools
             cmake
             just
+            catch2_3
           ];
 
           G4_DIR = "${pkgs.geant4}";

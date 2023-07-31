@@ -1,4 +1,4 @@
 # -*-Makefile-*-
 
-run:
-	just double-sipm/run
+run MACRO='':
+	just double-sipm/run {{MACRO}}
