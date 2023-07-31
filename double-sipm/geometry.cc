@@ -53,7 +53,7 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto scintillator = n4::box("Scintillator").xy(scint_xy                 ).z(scint_z               ).place (csi)
         .in(coating_log).at(0, 0, coating_thck/2).now();
     // Make a reusable (place many times) logical volume, containing: scintillator, coating and border-surface-between-them
-    auto coated_scint_log = n4::envelope_of(coating_log);
+    auto coated_scint_log = n4::envelope_of(coating_log, "Coated-scintillator");
     auto coating = n4::place(coating_log).in(coated_scint_log).now();
     place_csi_teflon_border_surface_between(scintillator, coating);
     // Reuse coated scintillator with optical border, however many times you need
