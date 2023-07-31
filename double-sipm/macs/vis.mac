@@ -123,4 +123,22 @@
 # For file-based drivers, use this to create an empty detector view:
 #/vis/viewer/flush
 
+
+#/tracking/verbose 2
+
+/vis/scene/add/axes    # Simple axes: x=red, y=green, z=blue.
+
+# /vis/viewer/set/style surface
+
+# # To draw only gammas:
+# /vis/filtering/trajectories/create/particleFilter
+# /vis/filtering/trajectories/particleFilter-0/add gamma
+
+
+/vis/geometry/set/visibility SourceRing 0 false
+/vis/geometry/set/visibility Detector   0 false
+
+/vis/geometry/set/colour Scintillator 0 1 0 0 0.7
+/vis/geometry/set/colour Coating      0 0 1 0 1
+
 #/control/execute macs/run.mac
