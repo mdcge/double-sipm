@@ -73,8 +73,8 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
                 G4double xpos = (i - ((float) nb_detectors_per_side/2 - 0.5)) * detector_width;
                 G4double ypos = (j - ((float) nb_detectors_per_side/2 - 0.5)) * detector_width;
                 G4double zpos;
-                if (side == 0) { zpos =   scintillator_offset + scint_z/2 + detector_depth/2;  }
-                else           { zpos = -(scintillator_offset + scint_z/2 + detector_depth/2); }
+                if (side == 0) { zpos =   scintillator_offset + coating_thck/2 + scint_z/2 + detector_depth/2;  }
+                else           { zpos = -(scintillator_offset + coating_thck/2 + scint_z/2 + detector_depth/2); }
                 n4::place(detector)
                     .in(world)
                     .at({xpos, ypos, zpos})
