@@ -72,12 +72,13 @@ G4PVPlacement* make_geometry(std::vector<std::vector<G4double>>& times_of_arriva
     auto coating_log  = n4::box("Coating"     ).xy(scint_xy + coating_thck*2).z(scint_z + coating_thck).volume(teflon);
     auto scintillator = n4::box("Scintillator").xy(scint_xy                 ).z(scint_z               ).place (csi)
         .in(coating_log).at(0, 0, coating_thck/2).now();
+    // Make a reusable (place many times) logical volume, containing: scintillator, coating and border-surface-between-them
     auto coated_scint_log = n4::envelope_of(coating_log);
     auto coating = n4::place(coating_log).in(coated_scint_log).now();
     place_csi_teflon_border_surface_between(scintillator, coating);
-
-    auto coating0 = n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(  0*deg).copy_no(0).now();
-    auto coating1 = n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(180*deg).copy_no(1).now();
+    // Reuse coated scintillator with optical border, however many times you need
+    n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(  0*deg).copy_no(0).now();
+    n4::place(coated_scint_log).in(world).at(0, 0, scintillator_offset).rotate_y(180*deg).copy_no(1).now();
 
     // ---- Detector geometry --------------------------------------------------------------------------------
     G4int nb_detectors_per_side = 3;
