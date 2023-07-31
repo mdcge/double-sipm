@@ -1,4 +1,3 @@
-#include "n4_run_manager.hh"
 #include "nain4.hh"
 #include "n4_ui.hh"
 #include "g4-mandatory.hh"
@@ -56,25 +55,57 @@ int main(int argc, char *argv[]) {
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
     // Open output file at start of run, close it at the end of the run
-    std::ofstream data_file;
-    auto  open_file = [&data_file] (G4Run const*) { data_file.open("G4_data_test.csv"); };
-    auto close_file = [&data_file] (G4Run const*) { data_file.close(); };
+    std::ofstream data_file_0;
+    std::ofstream data_file_1;
+    auto  open_file = [&data_file_0, &data_file_1] (G4Run const*) {
+        data_file_0.open("G4_photon_times_0.csv");
+        data_file_1.open("G4_photon_times_1.csv");
+    };
+    auto close_file = [&data_file_0, &data_file_1] (G4Run const*) { data_file_0.close(); data_file_1.close(); };
 
-    // Accumulators for energy deposited in each scintillator during a single event
+    // Accumulators for energy and photons observed in each scintillator during a single event
     std::vector<G4double> total_edep{0, 0};
-    // At the start of each event: reset the energy accumulators to zero
-    auto reset_total_edep = [&total_edep] (G4Event const*) { total_edep[0] = total_edep[1] = 0; };
-    // At the end of each event: record total energy deposited
-    auto print_total_edep = [&data_file, &total_edep] (G4Event const*) {
-        G4cout << "\nTotal deposited energy in scintillator 0: " << total_edep[0]
-               << "\nTotal deposited energy in scintillator 1: " << total_edep[1] << G4endl << G4endl;
-        data_file << total_edep[0] << "," << total_edep[1] << std::endl;
+    std::vector<G4int>  photon_count{0, 0};
+    std::vector<std::vector<G4double>> times_of_arrival{{}, {}};
+    // At the start of each event: reset the accumulators to zero
+    auto reset_photon_count = [&total_edep, &photon_count, &times_of_arrival] (G4Event const*) {
+        total_edep  [0] = total_edep  [1] = 0;
+        photon_count[0] = photon_count[1] = 0;
+        times_of_arrival[0].clear();
+        times_of_arrival[1].clear();
+    };
+
+    G4int double_hits = 0;
+    auto write_photon_count = [&data_file_0, &data_file_1, &double_hits, &total_edep, &photon_count, &times_of_arrival] (G4Event const* event) {
+        //G4cout << "Event number: " << event -> GetEventID() << G4endl;
+        // G4cout << G4endl << "Total deposited energy in scintillator 0: " << total_edep_0 << G4endl;
+        // G4cout << "Total deposited energy in scintillator 1: " << total_edep_1 << G4endl;
+        // G4cout << "Photon count 0: " << photon_count[0] << G4endl;
+        // G4cout << "Photon count 1: " << photon_count[1] << G4endl << G4endl;
+
+        G4cout << "Number of double events: " << double_hits << "/" << event -> GetEventID() << " events" << G4endl;
+        // G4cout << "Number of times: " << times_of_arrival[0].size() << " and " << times_of_arrival[1].size() << G4endl;
+        if (photon_count[0] > 0 && photon_count[1] > 0) {
+            double_hits += 1;
+        }
+        for (G4int i=0; i<times_of_arrival[0].size(); i++) {
+            if (photon_count[0] != 0) { data_file_0 << times_of_arrival[0][i] << ","; }
+            else                      { data_file_0 << 0; }
+        }
+        data_file_0 << std::endl;
+
+        for (G4int i=0; i<times_of_arrival[1].size(); i++) {
+            if (photon_count[1] != 0) { data_file_1 << times_of_arrival[1][i] << ","; }
+            else                      { data_file_1 << 0; }
+        }
+        data_file_1 << std::endl;
     };
 
     // At every step: increment running total of deposited energy during the event
     auto accumulate_energy = [&total_edep] (G4Step const* step) { add_step_edep(total_edep, step); };
 
-    // Don't simulate secondaries: total energy deposited by gammas is enough for now
+    // If needed, use this as stacking_action -> classify, to disable tracking
+    // of scintillation products
     auto kill_secondaries = [] (G4Track const* track) {
         G4int parent_ID = track -> GetParentID();
         if (parent_ID > 0) { return G4ClassificationOfNewTrack::fKill;   }
@@ -84,20 +115,26 @@ int main(int argc, char *argv[]) {
     // Setting mandatory G4 objects --------------------------
     auto run_manager = n4::run_manager::create()
         .physics(physics_list)
-        .geometry(make_geometry)
-        .actions([&] {return (new n4::actions{two_gammas})
+        .geometry([&]{ return make_geometry(photon_count, times_of_arrival); })
+        .actions( [&]{ return (new n4::actions{two_gammas})
             -> set((new n4::run_action())
                    -> begin(open_file)
                    -> end (close_file))
             -> set((new n4::event_action())
-                   -> begin(reset_total_edep)
-                   -> end  (print_total_edep))
-            -> set((new n4::stepping_action{accumulate_energy}))
-            -> set((new n4::stacking_action())
-                   -> classify(kill_secondaries));});
+                   -> begin(reset_photon_count)
+                   -> end(write_photon_count))
+            -> set((new n4::stepping_action{accumulate_energy}));});
+            // -> set((new n4::stacking_action())
+            //        -> classify(kill_secondaries));});
 
     // Run the simulation
-    // + No CLI arguments: open GUI
-    // + 1 CLI argument (`macs/<something>.mac`): run in batch mode, with the specified macro
+
+    // + No CLI arguments: open GUI (using the settings in macs/vis.mac)
+
+    // + 1 CLI argument (a macro file such as `macs/run.mac`): run in
+    //     batch mode, with the specified macro
+
+    // Batch mode will run the simulation much more quickly, because it will not
+    // spend resources on drawing trajectories.
     n4::ui(argc, argv);
 }
