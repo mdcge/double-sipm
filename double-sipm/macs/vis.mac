@@ -57,9 +57,13 @@
 # Draw smooth trajectories at end of event, showing trajectory points
 # as markers 2 pixels wide:
 /vis/scene/add/trajectories smooth
-/vis/modeling/trajectories/create/drawByCharge
-/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
-/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+#/vis/modeling/trajectories/create/drawByCharge
+#/vis/modeling/trajectories/drawByCharge-0/default/setDrawStepPts true
+#/vis/modeling/trajectories/drawByCharge-0/default/setStepPtsSize 2
+/vis/modeling/trajectories/create/drawByParticleID
+/vis/modeling/trajectories/drawByParticleID-0/set e- red
+/vis/modeling/trajectories/drawByParticleID-0/set gamma green
+/vis/modeling/trajectories/drawByParticleID-0/setRGBA opticalphoton  0 1 1 0.3
 # (if too many tracks cause core dump => /tracking/storeTrajectory 0)
 #
 # Draw hits at end of event:
@@ -142,7 +146,7 @@
 #                          name        depth  R   G   B   opacity
 /vis/geometry/set/colour Scintillator    0   1   0   0      1
 /vis/geometry/set/colour Coating         0   1   0.4 0.4    1
-/vis/geometry/set/colour SourceRing      0   0   1   1      1
+/vis/geometry/set/colour SourceRing      0   1   0   1      1
 /vis/geometry/set/colour Detector        0   1   1   0      1
 
 #/control/execute macs/run.mac
