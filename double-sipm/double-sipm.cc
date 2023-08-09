@@ -85,6 +85,7 @@ int main(int argc, char *argv[]) {
         G4cout << "Number of double events: " << double_hits << "/" << event -> GetEventID() << " events" << G4endl;
         // G4cout << "Number of times: " << times_of_arrival[0].size() << " and " << times_of_arrival[1].size() << G4endl;
         std::vector<size_t> photon_count{times_of_arrival[0].size(), times_of_arrival[0].size()};
+        std::vector<size_t> photon_count{times_of_arrival[0].size(), times_of_arrival[1].size()};
         if (photon_count[0] > 0 && photon_count[1] > 0) { double_hits += 1; }
         for (int side=0; side < 2; ++side) {
             for (size_t i=0; i<times_of_arrival[side].size(); i++) {
