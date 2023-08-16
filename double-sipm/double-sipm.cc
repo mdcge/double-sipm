@@ -37,9 +37,7 @@ auto physics_list() {
 }
 
 G4double delta_total_energy(G4Step const * step) {
-    auto  pre_energy = step ->  GetPreStepPoint() -> GetTotalEnergy();
-    auto post_energy = step -> GetPostStepPoint() -> GetTotalEnergy();
-    return pre_energy - post_energy;
+    return step -> GetTotalEnergyDeposit();
 }
 
 // Add energies deposited in this step to running totals of deposited energies in whole event
