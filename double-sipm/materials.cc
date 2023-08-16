@@ -13,12 +13,13 @@ const vec_double OPTPHOT_ENERGY_RANGE{1*eV, 8.21*eV};
 G4Material* csi_with_properties() {
     auto csi = n4::material("G4_CESIUM_IODIDE");
     // csi_rindex: values taken from "Optimization of Parameters for a CsI(Tl) Scintillator Detector Using GEANT4-Based Monte Carlo..." by Mitra et al (mainly page 3)
-    //  csi_scint: Fig. 2 in the paper
+    //  csi_scint: values from Fig. 2 in "A New Scintillation Material: Pure CsI with 10ns Decay Time" by Kubota et al (these are approximate...)
     // must be in increasing ENERGY order (decreasing wavelength) for scintillation to work properly
-    auto     csi_energies = n4::scale_by(hc*eV, {1/0.9, 1/0.7, 1/0.54, 1/0.35}); // denominator is wavelength in micrometres
-    vec_double csi_rindex =                     {1.79 , 1.79 , 1.79  , 1.79  };  //vec_double csi_rindex = {2.2094, 1.7611};
-    vec_double  csi_scint =                     {0.0  , 0.1  , 1.0   , 0.0   };
-    auto    csi_abslength = n4::scale_by(m    , {5    , 5    , 5     , 5     });
+    auto     csi_energies = n4::scale_by(hc*eV, {1/0.55, 1/0.36, 1/0.3, 1/0.26}); // denominator is wavelength in micrometres
+    // auto     csi_energies = n4::scale_by(hc*eV, {1/0.9, 1/0.7, 1/0.54, 1/0.35});
+    vec_double csi_rindex =                     {1.79  , 1.79  , 1.79 , 1.79  };  //vec_double csi_rindex = {2.2094, 1.7611};
+    vec_double  csi_scint =                     {0.0   , 0.1   , 1.0  , 0.0   };
+    auto    csi_abslength = n4::scale_by(m    , {5     , 5     , 5    , 5     });
     // Values from "Temperature dependence of pure CsI: scintillation light yield and decay time" by Amsler et al
     // "cold" refers to ~77K, i.e. liquid nitrogen temperature
     G4double csi_scint_yield      =  3200 / MeV;
@@ -35,7 +36,7 @@ G4Material* csi_with_properties() {
         .add("SCINTILLATIONTIMECONSTANT1", csi_time_fast)
         .add("SCINTILLATIONTIMECONSTANT2", csi_time_slow)
         .add("SCINTILLATIONYIELD"        , csi_scint_yield)
-      //.add("SCINTILLATIONYIELD"        ,   100 / MeV) // for testing
+        //.add("SCINTILLATIONYIELD"        ,   5 / MeV) // for testing
         .add("SCINTILLATIONYIELD1"       ,     0.57   )
         .add("SCINTILLATIONYIELD2"       ,     0.43   )
         .add("RESOLUTIONSCALE"           ,     1.0    )
