@@ -99,8 +99,11 @@ n4::sensitive_detector* sensitive_detector(G4int nb_detectors_per_side, std::vec
         auto photon_energy   = photon_momentum.mag();
 
         // Pixel pitch 25 um
-        auto sipm_energies = n4::scale_by(hc*eV, {1/0.9 , 1/0.7, 1/0.5  , 1/0.46 , 1/0.4 , 1/0.32});
-        std::vector<G4double> sipm_pdes =        {  0.03,   0.1,   0.245,   0.255,   0.23,   0.02};
+        // auto sipm_energies = n4::scale_by(hc*eV, {1/0.9 , 1/0.7, 1/0.5  , 1/0.46 , 1/0.4 , 1/0.32});
+        // std::vector<G4double> sipm_pdes =        {  0.03,   0.1,   0.245,   0.255,   0.23,   0.02};
+        auto sipm_energies = n4::scale_by(hc*eV, {1/0.9 , 1/0.7, 1/0.5  , 1/0.46 , 1/0.4 , 1/0.36, 1/0.34, 1/0.3 , 1/0.28});
+        std::vector<G4double> sipm_pdes =        {  0.03,   0.1,   0.245,   0.255,   0.23,   0.18,   0.18,   0.14,   0.02};
+
 
         if (G4UniformRand() < detection_probability(photon_energy, sipm_energies, sipm_pdes)) {
             if (copy_nb < pow(nb_detectors_per_side, 2)) { times_of_arrival[0].push_back(time); }
