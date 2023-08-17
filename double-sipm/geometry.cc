@@ -130,7 +130,7 @@ void place_csi_teflon_border_surface_between(G4PVPlacement* one, G4PVPlacement* 
         // According to the docs, for UNIFIED, dielectric_dielectric surfaces only the Lambertian reflection is turned on
         csi_teflon_surface -> SetMaterialPropertiesTable(
             n4::material_properties{}
-            .add("REFLECTIVITY", pp, {0.98 , 0.98})
+            .add("REFLECTIVITY", pp, {1.0 , 1.0})
             .done());
     }
     new G4LogicalBorderSurface(name, one, two, csi_teflon_surface);
