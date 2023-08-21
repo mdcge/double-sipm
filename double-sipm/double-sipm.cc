@@ -69,21 +69,31 @@ int main(int argc, char *argv[]) {
     // Each event produces a pair of back-to-back 511 keV gammas
     auto two_gammas = [](auto event){ generate_back_to_back_511_keV_gammas(event, {}, 0); };
 
-    // Open output file at start of run, close it at the end of the run
+    // Random number seed, also used to name the files
+    G4long seed = time(NULL);
+    auto seed_string = std::to_string(seed);
+    G4Random::setTheSeed(seed);
 
+    // Open output file at start of run, close it at the end of the run
     std::ofstream gamma_z_data_file_0; std::ofstream gamma_z_data_file_1;
     std::vector<std::ofstream*> gamma_z_data_files{&gamma_z_data_file_0, &gamma_z_data_file_1};
     std::ofstream time_data_file_0; std::ofstream time_data_file_1;
     std::vector<std::ofstream*> time_data_files{&time_data_file_0, &time_data_file_1};
     std::ofstream edep_data_file_0; std::ofstream edep_data_file_1;
     std::vector<std::ofstream*> edep_data_files{&edep_data_file_0, &edep_data_file_1};
-    auto open_file = [&gamma_z_data_files, &time_data_files, &edep_data_files] (G4Run const*) {
-        gamma_z_data_files[0] -> open("z_pos_0.csv");
-        gamma_z_data_files[1] -> open("z_pos_1.csv");
-        time_data_files[0] -> open("times_0.csv");
-        time_data_files[1] -> open("times_1.csv");
-        edep_data_files[0] -> open("edeps_0.csv");
-        edep_data_files[1] -> open("edeps_1.csv");
+    auto open_file = [&gamma_z_data_files, &time_data_files, &edep_data_files, seed_string] (G4Run const*) {
+        auto gzflnm0 = "z_pos_0_seed" + seed_string + ".csv";
+        auto gzflnm1 = "z_pos_1_seed" + seed_string + ".csv";
+        auto tdflnm0 = "times_0_seed" + seed_string + ".csv";
+        auto tdflnm1 = "times_1_seed" + seed_string + ".csv";
+        auto edflnm0 = "edeps_0_seed" + seed_string + ".csv";
+        auto edflnm1 = "edeps_1_seed" + seed_string + ".csv";
+        gamma_z_data_files[0] -> open(gzflnm0);
+        gamma_z_data_files[1] -> open(gzflnm1);
+        time_data_files[0] -> open(tdflnm0);
+        time_data_files[1] -> open(tdflnm1);
+        edep_data_files[0] -> open(edflnm0);
+        edep_data_files[1] -> open(edflnm1);
     };
     auto close_file = [&gamma_z_data_files, &time_data_files, &edep_data_files] (G4Run const*) {
         gamma_z_data_files[0] -> close();
